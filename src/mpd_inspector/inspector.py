@@ -3,7 +3,7 @@ from functools import cached_property
 
 from ..mpd_parser.enums import PresentationType, PeriodType
 import src.mpd_parser.tags as tags
-from .value_statements import ExplicitValue, DefaultValue, ImplicitValue
+from .value_statements import ExplicitValue, DefaultValue, ImplicitValue, InheritedValue
 from datetime import timedelta
 
 
@@ -30,6 +30,10 @@ class MPDInspector:
         if self._mpd.type == PresentationType.DYNAMIC:
             return True
         return False
+
+    @cached_property
+    def xpath(self):
+        return "//MPD"
 
     @cached_property
     def periods(self):
@@ -61,13 +65,25 @@ class PeriodInspector:
         return getattr(self._period, name)
 
     @cached_property
+    def adaptation_sets(self):
+        return [
+            AdaptationSetInspector(period_inspector=self, adaptation_set=adaptation_set)
+            for adaptation_set in self._period.adaptation_sets
+        ]
+
+    @cached_property
     def index(self) -> int:
         """Return the index of the period in the MPD"""
         return self._mpd_inspector._mpd.periods.index(self._period)
 
     @cached_property
-    def position(self) -> int:
-        """Return the position of the period in the MPD"""
+    def xpath(self) -> str:
+        """Return the XPath in the MPD to the period node"""
+        return self._mpd_inspector.xpath + f"/Period[{self.index+1}]"
+
+    @cached_property
+    def sequence(self) -> int:
+        """Return the position of the period in the MPD Period sequence"""
         return self.index + 1
 
     @cached_property
@@ -122,3 +138,68 @@ class PeriodInspector:
                     self._mpd_inspector.periods[self.index + 1].start_time
                     - self.start_time
                 )
+
+
+class AdaptationSetInspector:
+    def __init__(
+        self, period_inspector: PeriodInspector, adaptation_set: tags.AdaptationSet
+    ):
+        self._period_inspector = period_inspector
+        self._adaptation_set = adaptation_set
+        self._enhance()
+
+    def _enhance(self):
+        pass
+
+    def __getattr__(self, name):
+        return getattr(self._adaptation_set, name)
+
+    @cached_property
+    def index(self) -> int:
+        """Return the index of the period in the MPD"""
+        return self._period_inspector._period.adaptation_sets.index(
+            self._adaptation_set
+        )
+
+    @cached_property
+    def xpath(self) -> str:
+        """Return the XPath in the MPD to the adaptation set node"""
+        return self._period_inspector.xpath + f"/AdaptationSet[{self.index+1}]"
+
+    @cached_property
+    def representations(self):
+        return [
+            RepresentationInspector(
+                adaptation_set_inspector=self, representation=representation
+            )
+            for representation in self._adaptation_set.representations
+        ]
+
+
+class RepresentationInspector:
+    def __init__(
+        self,
+        adaptation_set_inspector: AdaptationSetInspector,
+        representation: tags.Representation,
+    ):
+        self._adaptation_set_inspector = adaptation_set_inspector
+        self._representation = representation
+        self._enhance()
+
+    def _enhance(self):
+        pass
+
+    def __getattr__(self, name):
+        return getattr(self._representation, name)
+
+    @cached_property
+    def index(self) -> int:
+        """Return the index of the period in the MPD"""
+        return self._adaptation_set_inspector._adaptation_set.representations.index(
+            self._representation
+        )
+
+    @cached_property
+    def xpath(self) -> str:
+        """Return the XPath in the MPD to the representation node"""
+        return self._adaptation_set_inspector.xpath + f"/Representation[{self.index+1}]"
