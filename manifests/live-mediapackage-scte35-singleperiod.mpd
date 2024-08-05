@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:scte35="urn:scte:scte35:2013:xml" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" id="201" type="dynamic" publishTime="2024-08-05T11:58:34+00:00" minimumUpdatePeriod="PT2S" availabilityStartTime="2023-04-11T21:23:16.180000+00:00" minBufferTime="PT10S" suggestedPresentationDelay="PT20.000S" timeShiftBufferDepth="PT59.000S" profiles="urn:mpeg:dash:profile:isoff-live:2011">
+  <Period start="PT41610842.400S" id="21080524">
+    <EventStream timescale="90000" schemeIdUri="urn:scte:scte35:2013:xml">
+      <Event duration="7956395">
+        <scte35:SpliceInfoSection protocolVersion="0" ptsAdjustment="7769619864" tier="4095">
+          <scte35:SpliceInsert spliceEventId="15" spliceEventCancelIndicator="false" outOfNetworkIndicator="true" spliceImmediateFlag="false" uniqueProgramId="1" availNum="18" availsExpected="255">
+            <scte35:Program>
+              <scte35:SpliceTime ptsTime="584648676"/>
+            </scte35:Program>
+            <scte35:BreakDuration autoReturn="false" duration="7956395"/>
+          </scte35:SpliceInsert>
+        </scte35:SpliceInfoSection>
+      </Event>
+    </EventStream>
+    <AdaptationSet id="1485523442" mimeType="video/mp4" segmentAlignment="true" startWithSAP="1" subsegmentAlignment="true" subsegmentStartsWithSAP="1" bitstreamSwitching="true">
+      <Representation id="1" width="854" height="480" frameRate="24/1" bandwidth="2299968" codecs="avc1.4D401F">
+        <SegmentTemplate timescale="24000" media="index_video_3_0_$Time$.mp4?m=1678459069" initialization="index_video_3_0_init.mp4?m=1678459069" startNumber="21080534" presentationTimeOffset="998660217616">
+          <SegmentTimeline>
+            <S t="998660643616" d="48000" r="29"/>
+          </SegmentTimeline>
+        </SegmentTemplate>
+      </Representation>
+      <Representation id="2" width="640" height="360" frameRate="24/1" bandwidth="1600000" codecs="avc1.4D401E">
+        <SegmentTemplate timescale="24000" media="index_video_7_0_$Time$.mp4?m=1678459069" initialization="index_video_7_0_init.mp4?m=1678459069" startNumber="21080534" presentationTimeOffset="998660217616">
+          <SegmentTimeline>
+            <S t="998660643616" d="48000" r="29"/>
+          </SegmentTimeline>
+        </SegmentTemplate>
+      </Representation>
+    </AdaptationSet>
+    <AdaptationSet id="2083690061" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1" lang="und" bitstreamSwitching="true">
+      <Label>und</Label>
+      <Representation id="3" bandwidth="129058" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+        <SegmentTemplate timescale="48000" media="index_audio_4_0_$Time$.mp4?m=1678459069" initialization="index_audio_4_0_init.mp4?m=1678459069" startNumber="21080534" presentationTimeOffset="1997320435968">
+          <SegmentTimeline>
+            <S t="1997321287936" d="96256"/>
+            <S t="1997321384192" d="95232"/>
+            <S t="1997321479424" d="96256" r="2"/>
+            <S t="1997321768192" d="95232"/>
+            <S t="1997321863424" d="96256" r="2"/>
+            <S t="1997322152192" d="95232"/>
+            <S t="1997322247424" d="96256" r="2"/>
+            <S t="1997322536192" d="95232"/>
+            <S t="1997322631424" d="96256" r="2"/>
+            <S t="1997322920192" d="95232"/>
+            <S t="1997323015424" d="96256" r="2"/>
+            <S t="1997323304192" d="95232"/>
+            <S t="1997323399424" d="96256" r="2"/>
+            <S t="1997323688192" d="95232"/>
+            <S t="1997323783424" d="96256" r="2"/>
+            <S t="1997324072192" d="95232"/>
+          </SegmentTimeline>
+        </SegmentTemplate>
+      </Representation>
+      <Representation id="4" bandwidth="129058" audioSamplingRate="48000" codecs="mp4a.40.2">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+        <SegmentTemplate timescale="48000" media="index_audio_8_0_$Time$.mp4?m=1678459069" initialization="index_audio_8_0_init.mp4?m=1678459069" startNumber="21080534" presentationTimeOffset="1997320435968">
+          <SegmentTimeline>
+            <S t="1997321287936" d="96256"/>
+            <S t="1997321384192" d="95232"/>
+            <S t="1997321479424" d="96256" r="2"/>
+            <S t="1997321768192" d="95232"/>
+            <S t="1997321863424" d="96256" r="2"/>
+            <S t="1997322152192" d="95232"/>
+            <S t="1997322247424" d="96256" r="2"/>
+            <S t="1997322536192" d="95232"/>
+            <S t="1997322631424" d="96256" r="2"/>
+            <S t="1997322920192" d="95232"/>
+            <S t="1997323015424" d="96256" r="2"/>
+            <S t="1997323304192" d="95232"/>
+            <S t="1997323399424" d="96256" r="2"/>
+            <S t="1997323688192" d="95232"/>
+            <S t="1997323783424" d="96256" r="2"/>
+            <S t="1997324072192" d="95232"/>
+          </SegmentTimeline>
+        </SegmentTemplate>
+      </Representation>
+    </AdaptationSet>
+    <SupplementalProperty schemeIdUri="urn:scte:dash:utc-time" value="2024-08-05T11:57:14.458Z"/>
+  </Period>
+</MPD>
