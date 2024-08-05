@@ -17,3 +17,8 @@ class AddressingMode(enum.Enum):
     EXPLICIT = "explicit"
     INDEXED = "indexed"
     SIMPLE = "simple"
+
+
+class TemplateVariable(enum.Enum):
+    NUMBER = "$Number$"
+    TIME = "$Time$"
