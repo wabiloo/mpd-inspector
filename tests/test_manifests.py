@@ -133,13 +133,9 @@ def test_to_string(input_file):
             orig_mpd.periods[0]
             .adaptation_sets[0]
             .representations[0]
-            .segment_bases[0]
-            .initializations[0]
-            .range
+            .segment_base.initialization.range
             == transformed_mpd.periods[0]
             .adaptation_sets[0]
             .representations[0]
-            .segment_bases[0]
-            .initializations[0]
-            .range
+            .segment_base.initialization.range
         )

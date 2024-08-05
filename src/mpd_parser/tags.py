@@ -20,8 +20,13 @@ from .attribute_parsers import (
     get_duration_value,
 )
 
-LOOKUP_STR_FORMAT = './*[local-name(.) = "{target}" ]'
+LOOKUP_STR_FORMAT = './*[local-name(.) = "{target}"]'
 KEYS_NOT_FOR_SETTING = ["element", "tag_map", "encoding"]
+
+
+def single_element_or_none(arr: list):
+    if len(arr):
+        return arr[0]
 
 
 class Tag:
@@ -361,31 +366,19 @@ class Representation(RepresentationBase):
         ]
 
     @cached_property
-    def segment_bases(self):
-        return [
-            SegmentBase(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentBase")
-            )
-        ]
+    def segment_base(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentBase"))
+        return SegmentBase(nodes[0]) if nodes else None
 
     @cached_property
-    def segment_lists(self):
-        return [
-            SegmentList(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentList")
-            )
-        ]
+    def segment_list(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentList"))
+        return SegmentList(nodes[0]) if nodes else None
 
     @cached_property
-    def segment_templates(self):
-        return [
-            SegmentTemplate(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentTemplate")
-            )
-        ]
+    def segment_template(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentTemplate"))
+        return SegmentTemplate(nodes[0]) if nodes else None
 
     @cached_property
     def sub_representations(self):
@@ -529,31 +522,19 @@ class AdaptationSet(RepresentationBase):  # pylint: disable=too-many-public-meth
         ]
 
     @cached_property
-    def segment_bases(self):
-        return [
-            SegmentBase(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentBase")
-            )
-        ]
+    def segment_base(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentBase"))
+        return SegmentBase(nodes[0]) if nodes else None
 
     @cached_property
-    def segment_lists(self):
-        return [
-            SegmentList(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentList")
-            )
-        ]
+    def segment_list(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentList"))
+        return SegmentList(nodes[0]) if nodes else None
 
     @cached_property
-    def segment_templates(self):
-        return [
-            SegmentTemplate(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentTemplate")
-            )
-        ]
+    def segment_template(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentTemplate"))
+        return SegmentTemplate(nodes[0]) if nodes else None
 
     @cached_property
     def representations(self):
@@ -695,12 +676,36 @@ class SegmentTimeline(Tag):
         ]
 
 
-class SegmentBase(Tag):
-    """Basic Segment tag representation"""
+class MultipleSegmentBaseInformationMixin:
+    """Multiple segments tag"""
 
     @cached_property
     def timescale(self):
         return get_int_value(self.element.attrib.get("timescale"))
+
+    @cached_property
+    def duration(self):
+        return get_int_value(self.element.attrib.get("duration"))
+
+    @cached_property
+    def start_number(self):
+        return get_int_value(self.element.attrib.get("startNumber"))
+
+    @cached_property
+    def segment_timeline(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentTimeline"))
+        return SegmentTimeline(nodes[0]) if nodes else None
+
+    @cached_property
+    def bitstream_switching(self):
+        nodes = self.element.xpath(
+            LOOKUP_STR_FORMAT.format(target="BitstreamSwitching")
+        )
+        return BitstreamSwitching(nodes[0]) if nodes else None
+
+
+class SegmentBase(Tag, MultipleSegmentBaseInformationMixin):
+    """Basic Segment tag representation"""
 
     @cached_property
     def index_range(self):
@@ -723,52 +728,16 @@ class SegmentBase(Tag):
         return get_bool_value(self.element.attrib.get("availabilityTimeComplete"))
 
     @cached_property
-    def initializations(self):
-        return [
-            Initialization(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="Initialization")
-            )
-        ]
+    def initialization(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="Initialization"))
+        return Initialization(nodes[0]) if nodes else None
 
     @cached_property
-    def representation_indexes(self):
-        return [
-            RepresentationIndex(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="RepresentationIndex")
-            )
-        ]
-
-
-class MultipleSegmentBase(SegmentBase):
-    """Multiple segments tag"""
-
-    @cached_property
-    def duration(self):
-        return get_int_value(self.element.attrib.get("duration"))
-
-    @cached_property
-    def start_number(self):
-        return get_int_value(self.element.attrib.get("startNumber"))
-
-    @cached_property
-    def segment_timelines(self):
-        return [
-            SegmentTimeline(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentTimeline")
-            )
-        ]
-
-    @cached_property
-    def bitstream_switchings(self):
-        return [
-            BitstreamSwitchings(member)
-            for member in self.element.xpath(
-                './*[local-name(.) = "BitstreamSwitching" ]'
-            )
-        ]
+    def representation_index(self):
+        nodes = self.element.xpath(
+            LOOKUP_STR_FORMAT.format(target="RepresentationIndex")
+        )
+        return RepresentationIndex(nodes[0]) if nodes else None
 
 
 class SegmentURL(Tag):
@@ -791,7 +760,7 @@ class SegmentURL(Tag):
         return self.element.attrib.get("indexRange")
 
 
-class SegmentList(MultipleSegmentBase):
+class SegmentList(Tag, MultipleSegmentBaseInformationMixin):
     """SegmentList tag"""
 
     @cached_property
@@ -804,7 +773,7 @@ class SegmentList(MultipleSegmentBase):
         ]
 
 
-class SegmentTemplate(MultipleSegmentBase):
+class SegmentTemplate(Tag, MultipleSegmentBaseInformationMixin):
 
     @cached_property
     def media(self):
@@ -897,31 +866,19 @@ class Period(Tag):
         ]
 
     @cached_property
-    def segment_bases(self):
-        return [
-            SegmentBase(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentBase")
-            )
-        ]
+    def segment_base(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentBase"))
+        return SegmentBase(nodes[0]) if nodes else None
 
     @cached_property
-    def segment_lists(self):
-        return [
-            SegmentList(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentList")
-            )
-        ]
+    def segment_list(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentList"))
+        return SegmentList(nodes[0]) if nodes else None
 
     @cached_property
-    def segment_templates(self):
-        return [
-            SegmentTemplate(member)
-            for member in self.element.xpath(
-                LOOKUP_STR_FORMAT.format(target="SegmentTemplate")
-            )
-        ]
+    def segment_template(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="SegmentTemplate"))
+        return SegmentTemplate(nodes[0]) if nodes else None
 
     @cached_property
     def asset_identifiers(self):
@@ -982,7 +939,7 @@ class RepresentationIndex(URL):
     """Representation Index tag representation"""
 
 
-class BitstreamSwitchings(URL):
+class BitstreamSwitching(URL):
     """BitstreamSwitching tag representation"""
 
 
