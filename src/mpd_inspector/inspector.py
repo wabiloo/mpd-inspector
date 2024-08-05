@@ -1,5 +1,6 @@
 from functools import cached_property
-from typing import Optional
+from typing import List, Optional
+from urllib.parse import urljoin
 
 from ..mpd_parser.enums import (
     PresentationType,
@@ -15,6 +16,7 @@ from datetime import timedelta, datetime
 class MPDInspector:
     def __init__(self, mpd: tags.MPD):
         self._mpd = mpd
+        self._base_uri = ""
         self._enhance()
 
     def _enhance(self):
@@ -25,6 +27,14 @@ class MPDInspector:
 
     def __getattr__(self, name):
         return getattr(self._mpd, name)
+
+    @property
+    def base_uri(self) -> str:
+        return self._base_uri
+
+    @base_uri.setter
+    def base_uri(self, value: str):
+        self._base_uri = value
 
     def is_vod(self):
         if self._mpd.type == PresentationType.STATIC:
@@ -55,6 +65,15 @@ class MPDInspector:
             return ExplicitValue(orig_value)
         else:
             return DefaultValue(datetime.datetime.fromtimestamp(0.0))
+
+    @cached_property
+    def full_urls(self):
+        if self._mpd.base_urls:
+            return [
+                urljoin(self.base_uri, base_url.text)
+                for base_url in self._mpd.base_urls
+            ]
+        return [self.base_uri]
 
 
 class PeriodInspector:
@@ -151,6 +170,17 @@ class PeriodInspector:
                         self._mpd_inspector._mpd.media_presentation_duration
                     )
 
+    @cached_property
+    def full_urls(self):
+        if not self._period.base_urls:
+            return self._mpd_inspector.full_urls
+        else:
+            return [
+                urljoin(mpd_base_url, period_base_url.text)
+                for mpd_base_url in self._mpd_inspector.full_urls
+                for period_base_url in self._period.base_urls
+            ]
+
 
 class AdaptationSetInspector:
     def __init__(
@@ -188,6 +218,17 @@ class AdaptationSetInspector:
             for representation in self._adaptation_set.representations
         ]
 
+    @cached_property
+    def full_urls(self):
+        if not self._adaptation_set.base_urls:
+            return self._period_inspector.full_urls
+        else:
+            return [
+                urljoin(period_base_url, adapt_base_url.text)
+                for period_base_url in self._period_inspector.full_urls
+                for adapt_base_url in self._adaptation_set.base_urls
+            ]
+
 
 class RepresentationInspector:
     def __init__(
@@ -218,6 +259,17 @@ class RepresentationInspector:
     def xpath(self) -> str:
         """Return the XPath in the MPD to the representation node"""
         return self._adaptation_set_inspector.xpath + f"/Representation[{self.index+1}]"
+
+    @cached_property
+    def full_urls(self):
+        if not self._representation.base_urls:
+            return self._adaptation_set_inspector.full_urls
+        else:
+            return [
+                urljoin(period_base_url, repr_base_url.text)
+                for period_base_url in self._period_inspector.full_urls
+                for repr_base_url in self._representation.base_urls
+            ]
 
     @cached_property
     def segment_information(self):
@@ -293,17 +345,21 @@ class SegmentInformationInspector:
             if "$Number$" in self.info.value.media:
                 return TemplateVariable.NUMBER
 
-    def resolve_url(self, attribute_name, replacements: dict):
+    def full_urls(self, attribute_name, replacements: dict):
 
         all_replacements = {"$RepresentationID$": self._representation_inspector.id}
         all_replacements.update(replacements)
 
         media_url = getattr(self.info.value, attribute_name)
+        full_urls = []
         if media_url:
-            for var, value in all_replacements.items():
-                media_url = media_url.replace(var, str(value))
+            for representation_url in self._representation_inspector.full_urls:
+                full_url = representation_url + media_url
+                for var, value in all_replacements.items():
+                    full_url = full_url.replace(var, str(value))
+            full_urls.append(full_url)
 
-        return media_url
+        return full_urls
 
     @cached_property
     def segments(self):
@@ -311,86 +367,65 @@ class SegmentInformationInspector:
             self.addressing_mode == AddressingMode.SIMPLE
             and self.addressing_template == TemplateVariable.NUMBER
         ):
-            segment_number = self.info.value.start_number
-            segment_duration = self.info.value.duration / self.info.value.timescale
-            total_duration_so_far = 0
-            while (
-                total_duration_so_far < self._period_inspector.duration.total_seconds()
-            ):
-                yield MediaSegment(
-                    number=segment_number,
-                    duration=segment_duration,
-                    url=self.resolve_url("media", {"$Number$": segment_number}),
-                    init_url=self.resolve_url("initialization", {}),
-                )
-                segment_number += 1
-                total_duration_so_far += segment_duration
+            yield from self._generate_segments_from_simple_number_addressing()
 
         elif (
             self.addressing_mode == AddressingMode.EXPLICIT
             and self.addressing_template == TemplateVariable.TIME
         ):
-            timescale = self.info.value.timescale
-            segment: tags.Segment
-            segment_start = None
-            for segment in self.info.segment_timeline.segments:
-                if segment.t:
-                    segment_start = segment.t
+            yield from self._generate_segments_from_explicit_time_addressing()
 
-                yield MediaSegment(
-                    start=segment_start / timescale,
-                    duration=segment.d / timescale,
-                    url=self.resolve_url("media", {"$Time$": segment_start}),
-                    init_url=self.resolve_url("initialization", {}),
-                )
-                segment_start += segment.d
-                if segment.r:
-                    for r in range(segment.r):
-                        yield MediaSegment(
-                            start=segment_start / timescale,
-                            duration=segment.d / timescale,
-                            url=self.resolve_url("media", {"$Time$": segment_start}),
-                            init_url=self.resolve_url("initialization", {}),
-                        )
-                        segment_start += segment.d
-
-        # elif self.addressing_mode == AddressingMode.EXPLICIT:
-        #     return [
-        #         SegmentInspector(self, segment)
-        #         for segment in self.info.segment_timeline.segments
-        #     ]
         else:
             raise NotImplementedError("This addressing mode has not been implemented")
 
+    def _generate_segments_from_simple_number_addressing(self):
+        segment_number = self.info.value.start_number
+        segment_duration = self.info.value.duration / self.info.value.timescale
+        total_duration_so_far = 0
+        while total_duration_so_far < self._period_inspector.duration.total_seconds():
+            yield MediaSegment(
+                number=segment_number,
+                duration=segment_duration,
+                urls=self.full_urls("media", {"$Number$": segment_number}),
+                init_urls=self.full_urls("initialization", {}),
+            )
+            segment_number += 1
+            total_duration_so_far += segment_duration
 
-class SegmentInspector:
-    def __init__(
-        self,
-        segment_information_inspector: SegmentInformationInspector,
-        segment: tags.Segment,
-    ):
-        self._segment_information_inspector = segment_information_inspector
-        self._segment = segment
-        self._enhance()
+    def _generate_segments_from_explicit_time_addressing(self):
+        def _generate_media_segment(segment_start, duration, timescale):
+            return MediaSegment(
+                start=segment_start / timescale,
+                duration=duration / timescale,
+                urls=self.full_urls("media", {"$Time$": segment_start}),
+                init_urls=self.full_urls("initialization", {}),
+            )
 
-    def _enhance(self):
-        pass
+        timescale = self.info.value.timescale
+        segment_start = None
+        for segment in self.info.segment_timeline.segments:
+            if segment.t:
+                segment_start = segment.t
 
-    def __getattr__(self, name):
-        return getattr(self._segment, name)
+            yield _generate_media_segment(segment_start, segment.d, timescale)
+            segment_start += segment.d
+            if segment.r:
+                for r in range(segment.r):
+                    yield _generate_media_segment(segment_start, segment.d, timescale)
+                    segment_start += segment.d
 
 
 class MediaSegment:
     def __init__(
         self,
-        url: str,
+        urls: List[str],
         duration: float,
-        init_url: Optional[str] = None,
+        init_urls: List[str] = [],
         number: Optional[int] = None,
         start: Optional[datetime | float] = None,
     ):
-        self.url = url
-        self.init_url = init_url
+        self.urls = urls
+        self.init_urls = init_urls
         self.duration = duration
         self.number = number
         if isinstance(start, float):
@@ -399,7 +434,7 @@ class MediaSegment:
             self.start = start
 
     def __repr__(self):
-        return f"MediaSegment({self.url})"
+        return f"MediaSegment({self.urls})"
 
     @cached_property
     def end(self):

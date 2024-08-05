@@ -60,8 +60,8 @@ def test_inspect_vod_file(input_file):
     segment_list = list(segment_generator)
     assert len(segment_list) == 53
 
-    assert segment_list[0].url == "../video/180_250000/dash/segment_0.m4s"
-    assert segment_list[-1].url == "../video/180_250000/dash/segment_52.m4s"
+    assert segment_list[0].urls == ["../video/180_250000/dash/segment_0.m4s"]
+    assert segment_list[-1].urls == ["../video/180_250000/dash/segment_52.m4s"]
 
 
 @mark.parametrize(
@@ -73,6 +73,7 @@ def test_inspect_vod_file(input_file):
 def test_inspect_live_manifest(input_file):
     mpd = Parser.from_file(input_file)
     inspector = MPDInspector(mpd)
+
     assert inspector.type == PresentationType.DYNAMIC
     assert inspector.is_live() is True
     assert inspector.id == mpd.id
@@ -92,14 +93,14 @@ def test_inspect_live_manifest(input_file):
     video_segment_generator = video_seg_info.segments
     segment_list = list(video_segment_generator)
     assert len(segment_list) == 30
-    assert segment_list[0].url == "index_video_3_0_998660643616.mp4?m=1678459069"
+    assert segment_list[0].urls == ["index_video_3_0_998660643616.mp4?m=1678459069"]
 
     repr_audio_2 = inspector.periods[0].adaptation_sets[1].representations[1]
     audio_seg_info = repr_audio_2.segment_information
     audio_segment_generator = audio_seg_info.segments
     segment_list = list(audio_segment_generator)
     assert len(segment_list) == 30
-    assert segment_list[0].url == "index_audio_8_0_1997321287936.mp4?m=1678459069"
+    assert segment_list[0].urls == ["index_audio_8_0_1997321287936.mp4?m=1678459069"]
 
 
 @mark.parametrize(
@@ -111,6 +112,10 @@ def test_inspect_live_manifest(input_file):
 def test_inspect_live_manifest_multiperiod(input_file):
     mpd = Parser.from_file(input_file)
     inspector = MPDInspector(mpd)
+    inspector.base_uri = (
+        "https://stream.broadpeak.io/out/v1/6e0f649095ca4131b16bd0f877048629/index.mpd"
+    )
+
     assert inspector.id == mpd.id
     assert inspector.unparsed_attr("availabilityStartTime") == "1970-01-01T00:00:00Z"
     assert isinstance(inspector.availability_start_time, ExplicitValue)
@@ -131,3 +136,12 @@ def test_inspect_live_manifest_multiperiod(input_file):
     assert inspector.periods[1].start_time == datetime.fromisoformat(
         "2024-08-05 12:22:31.66400Z"
     )
+
+    repr0 = inspector.periods[0].adaptation_sets[0].representations[0]
+    video_seg_info = repr0.segment_information
+    video_segment_generator = video_seg_info.segments
+    segment_list = list(video_segment_generator)
+    assert len(segment_list) == 24
+    assert segment_list[0].urls == [
+        "https://stream.broadpeak.io/out/v1/6e0f649095ca4131b16bd0f877048629/index_video_3_0_998695395616.mp4?m=1678459069&bpkio_serviceid=9bf31c7ff062936a58b598bc9efa90d4&bpkio_sessionid=10b0f41c170-232af2ef-2dfe-4c6f-bcb9-8e6bf5206496"
+    ]
