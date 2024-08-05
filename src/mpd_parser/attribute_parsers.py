@@ -1,9 +1,12 @@
 """
 Module for utility functions
 """
+
+from datetime import datetime, timedelta
 import math
 import re
 from typing import Optional, Type, Dict, List
+import isodate
 
 
 def organize_ns(namespace_mapping: Dict[Optional[str], str]) -> dict:
@@ -16,23 +19,23 @@ def organize_ns(namespace_mapping: Dict[Optional[str], str]) -> dict:
         dict: key values for the ns map without None as key
     """
     new_mapping: Dict[Optional[str], str] = dict(namespace_mapping)
-    new_mapping['ns'] = namespace_mapping[None]
+    new_mapping["ns"] = namespace_mapping[None]
     new_mapping.pop(None)
     return new_mapping
 
 
 def get_float_value(value: str) -> float:
-    """ Helper to return a float from str """
+    """Helper to return a float from str"""
     if value is None:
         return None
-    return float(value) if value != 'INF' else math.inf
+    return float(value) if value != "INF" else math.inf
 
 
 def get_bool_value(value: str) -> Optional[bool]:
-    """ Helper to return a bool from str """
-    if value == 'true':
+    """Helper to return a bool from str"""
+    if value == "true":
         return True
-    if value == 'false':
+    if value == "false":
         return False
     return None
 
@@ -47,7 +50,17 @@ def get_int_value(value: str) -> Optional[int]:
 
 
 def get_list_of_type(target_type: Type, attribute_value: str) -> List[str]:
-    """ Helper to return a list of strings from the tag attribute """
+    """Helper to return a list of strings from the tag attribute"""
     if attribute_value is None:
         return []
     return [target_type(item) for item in re.split(r"[, ]", attribute_value)]
+
+
+def get_datetime_value(value: str) -> Optional[datetime]:
+    """Helper to return a datetime from str"""
+    return value if value is None else isodate.parse_datetime(value)
+
+
+def get_duration_value(value: str) -> Optional[timedelta]:
+    """Helper to return a duration from str"""
+    return value if value is None else isodate.parse_duration(value)

@@ -6,8 +6,8 @@ from urllib.request import urlopen
 
 from lxml import etree
 
-from mpd_parser.exceptions import UnicodeDeclaredError, UnknownElementTreeParseError
-from mpd_parser.tags import MPD
+from .exceptions import UnicodeDeclaredError, UnknownElementTreeParseError
+from .tags import MPD
 
 ENCODING_PATTERN = r'<\?.*?\s(encoding=\"\S*\").*\?>'
 
