@@ -3,9 +3,10 @@
 ## Overview
 This is a module to parse MPEG-DASH Media Presentation Documents (aka. MPD) from files or URLs, and interpret them
 This package is built as a fork from the excellent [mpd-parser](https://github.com/avishaycohen/mpd-parser/tree/main). The main reasons for forking it are:
+1. I needed to change the behaviour to be closer to the MPEG-DASH spec, in particular DASH-IF IOP rules.
 1. I wanted to parse all MPD attributes into native Python types (including for datetimes and durations)
 2. I wanted to be able to expose unparsed elements
-3. I wanted to add a layer of inspection/analysis to make it possible to calculate implicit/derived values (eg. start and duration of periods in multi-period MPD)
+3. I wanted to add a layer of inspection/analysis to make it possible to calculate implicit/derived values (eg. start and duration of periods in multi-period MPD) - in particular again for validation against the DASH-IF Interoperability guidance
 
 
 ## Installation

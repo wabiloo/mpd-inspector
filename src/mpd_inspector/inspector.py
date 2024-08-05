@@ -1,7 +1,7 @@
 import datetime
 from functools import cached_property
 
-from ..mpd_parser.enums import PresentationType, PeriodType
+from ..mpd_parser.enums import PresentationType, PeriodType, AddressingMode
 import src.mpd_parser.tags as tags
 from .value_statements import ExplicitValue, DefaultValue, ImplicitValue, InheritedValue
 from datetime import timedelta
@@ -203,3 +203,79 @@ class RepresentationInspector:
     def xpath(self) -> str:
         """Return the XPath in the MPD to the representation node"""
         return self._adaptation_set_inspector.xpath + f"/Representation[{self.index+1}]"
+
+    @cached_property
+    def segment_information(self):
+        """Return the element that defines the way to access the media segments"""
+        return SegmentInformationInspector(self)
+
+
+class SegmentInformationInspector:
+    def __init__(self, representation_inspector: RepresentationInspector):
+        self._representation_inspector = representation_inspector
+        self._enhance()
+
+    def _enhance(self):
+        pass
+
+    def __getattr__(self, name):
+        # any unknown attr, we send to the original segment definition
+        return getattr(self.info, name)
+
+    @cached_property
+    def info(self):
+        # TODO - the DASH spec seems to allow for inheritance of properties, not just entire nodes
+
+        # On the current node
+        if self._representation_inspector.segment_template:
+            return ExplicitValue(self._representation_inspector.segment_template)
+        elif self._representation_inspector.segment_list:
+            return ExplicitValue(self._representation_inspector.segment_list)
+        elif self._representation_inspector.segment_base:
+            return ExplicitValue(self._representation_inspector.segment_base)
+
+        # Or on the parent adaptation set node
+        if self._representation_inspector._adaptation_set_inspector.segment_template:
+            return InheritedValue(
+                self._representation_inspector._adaptation_set_inspector.segment_template
+            )
+        elif self._representation_inspector._adaptation_set_inspector.segment_list:
+            return InheritedValue(
+                self._representation_inspector._adaptation_set_inspector.segment_list
+            )
+        elif self._representation_inspector._adaptation_set_inspector.segment_base:
+            return InheritedValue(
+                self._representation_inspector._adaptation_set_inspector.segment_base
+            )
+
+        # or even on the period node
+        if (
+            self._representation_inspector._adaptation_set_inspector._period_inspector.segment_template
+        ):
+            return InheritedValue(
+                self._representation_inspector._adaptation_set_inspector._period_inspector.segment_template
+            )
+        elif (
+            self._representation_inspector._adaptation_set_inspector._period_inspector.segment_list
+        ):
+            return InheritedValue(
+                self._representation_inspector._adaptation_set_inspector._period_inspector.segment_list
+            )
+        elif (
+            self._representation_inspector._adaptation_set_inspector._period_inspector.segment_base
+        ):
+            return InheritedValue(
+                self._representation_inspector._adaptation_set_inspector._period_inspector.segment_base
+            )
+
+    @cached_property
+    def addressing_mode(self):
+        if isinstance(self.info.value, tags.SegmentBase):
+            return AddressingMode.INDEXED
+        if (
+            isinstance(self.info.value, tags.SegmentTemplate)
+            and not self.info.segment_timeline
+        ):
+            return AddressingMode.SIMPLE
+        if isinstance(self.info.value, tags.SegmentTemplate) and self.info.segment_timeline:
+            return AddressingMode.EXPLICIT

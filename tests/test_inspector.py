@@ -48,6 +48,10 @@ def test_inspect_vod_file(input_file):
     assert repr0.id == "180_250000"
     assert repr0.xpath == "//MPD/Period[1]/AdaptationSet[1]/Representation[1]"
 
+    segment_info = repr0.segment_information
+    assert isinstance(segment_info.info, InheritedValue)
+    assert segment_info.addressing_mode == AddressingMode.SIMPLE
+
 
 @mark.parametrize(
     "input_file",

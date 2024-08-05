@@ -66,6 +66,9 @@ class StatedValue:
     def __repr__(self):
         return f"StatedValue({self.value})"
 
+    def __getattr__(self, name):
+        return getattr(self.value, name)
+
 
 class ExplicitValue(StatedValue):
 
@@ -83,3 +86,9 @@ class ImplicitValue(StatedValue):
 
     def __repr__(self):
         return f"ImplicitValue({self.value})"
+
+
+class InheritedValue(StatedValue):
+
+    def __repr__(self):
+        return f"InheritedValue({self.value})"

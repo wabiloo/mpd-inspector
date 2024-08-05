@@ -11,3 +11,9 @@ class PeriodType(enum.Enum):
     REGULAR = "Regular Period"
     EARLY_AVAILABLE = "Early Available Period"
     EARLY_TERMINATED = "Early Terminated Period"
+
+
+class AddressingMode(enum.Enum):
+    EXPLICIT = "explicit"
+    INDEXED = "indexed"
+    SIMPLE = "simple"
