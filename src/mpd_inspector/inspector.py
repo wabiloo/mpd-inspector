@@ -171,6 +171,13 @@ class PeriodInspector:
                     )
 
     @cached_property
+    def end_time(self) -> datetime:
+        if self.duration:
+            return DerivedValue(self.start_time + self.duration)
+        else:
+            return None
+
+    @cached_property
     def full_urls(self):
         if not self._period.base_urls:
             return self._mpd_inspector.full_urls
