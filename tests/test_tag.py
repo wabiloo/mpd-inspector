@@ -6,7 +6,7 @@ import math
 
 import pytest
 from lxml import etree
-from mpd_inspector.parser.tags import (
+from mpd_inspector.parser.mpd_tags import (
     ProgramInfo,
     BaseURL,
     UTCTiming,

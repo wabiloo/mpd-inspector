@@ -24,11 +24,6 @@ LOOKUP_STR_FORMAT = './*[local-name(.) = "{target}"]'
 KEYS_NOT_FOR_SETTING = ["element", "tag_map", "encoding"]
 
 
-def single_element_or_none(arr: list):
-    if len(arr):
-        return arr[0]
-
-
 class Tag:
     """Generic repr of mpd tag object"""
 
@@ -76,6 +71,10 @@ class Tag:
     def unparsed_attr(self, key: str) -> Optional[str]:
         """get unparsed attribute value"""
         return self.element.attrib.get(key)
+
+    def cast_single_child(self, node_name, class_name):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target=node_name))
+        return class_name(nodes[0]) if nodes else None
 
 
 class TextTag(Tag):
@@ -801,15 +800,19 @@ class Event(TextTag):
 
     @cached_property
     def presentation_time(self):
-        return int(self.element.attrib.get("presentationTime"))
+        return get_int_value(self.element.attrib.get("presentationTime"))
 
     @cached_property
     def duration(self):
-        return int(self.element.attrib.get("duration"))
+        return get_int_value(self.element.attrib.get("duration"))
 
     @cached_property
     def id(self):
-        return int(self.element.attrib.get("id"))
+        return get_int_value(self.element.attrib.get("id"))
+
+    @cached_property
+    def content(self):
+        return list(self.element)
 
 
 class EventStream(Descriptor):
@@ -817,7 +820,7 @@ class EventStream(Descriptor):
 
     @cached_property
     def timescale(self):
-        return self.element.attrib.get("timescale")
+        return get_int_value(self.element.attrib.get("timescale"))
 
     @cached_property
     def events(self):

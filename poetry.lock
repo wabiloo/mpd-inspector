@@ -263,6 +263,17 @@ files = [
 ]
 
 [[package]]
+name = "new-reader"
+version = "0.1.11"
+description = "Read http(s), multicast, and udp streams like files"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "new_reader-0.1.11-py3-none-any.whl", hash = "sha256:78679fa0d565a5bb851ebb174fddddb0d10342fdfc2cb48a85c8abfd02523f4e"},
+    {file = "new_reader-0.1.11.tar.gz", hash = "sha256:7028c2282345f58857e6bd3735e640d91e8607ae6adedf0c7400956b5c8db5ba"},
+]
+
+[[package]]
 name = "packaging"
 version = "24.1"
 description = "Core utilities for Python packages"
@@ -303,6 +314,16 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
+
+[[package]]
+name = "pyaes"
+version = "1.6.1"
+description = "Pure-Python Implementation of the AES block-cipher and common modes of operation"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyaes-1.6.1.tar.gz", hash = "sha256:02c1b1405c38d3c370b085fb952dd8bea3fadcee6411ad99f312cc129c536d8f"},
+]
 
 [[package]]
 name = "pylint"
@@ -368,6 +389,21 @@ files = [
 ]
 
 [[package]]
+name = "threefive"
+version = "2.4.67"
+description = "The Undisputed Heavyweight Champion of SCTE-35."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "threefive-2.4.67-py3-none-any.whl", hash = "sha256:ce561226282fa0e14319e1f7019c8f908f03912031dd76b6b14e354de87558d4"},
+    {file = "threefive-2.4.67.tar.gz", hash = "sha256:c73195e9275527475fbfdb0f448890f10ffc2545d43ffcf233232d07571f8107"},
+]
+
+[package.dependencies]
+new-reader = ">=0.1.11"
+pyaes = "*"
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -403,4 +439,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "6d6469789b00200465d66cbdba369fe5a626d2f91415b62320d1c42524a7ec8b"
+content-hash = "258ebd158b56b21ca710236d2bb679e03f1e086e7be65348753d260b5f12c294"

@@ -2,7 +2,7 @@ import pytest
 from lxml import etree
 
 from mpd_inspector.parser.parser import MPDParser
-from mpd_inspector.parser.tags import Subset
+from mpd_inspector.parser.mpd_tags import Subset
 
 
 @pytest.mark.parametrize(

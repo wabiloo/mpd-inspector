@@ -12,7 +12,7 @@ from mpd_inspector.inspector import (
     PeriodInspector,
     RepresentationInspector,
 )
-from mpd_inspector.parser.tags import SegmentTemplate, SegmentTimeline
+from mpd_inspector.parser.mpd_tags import SegmentTemplate, SegmentTimeline
 from mpd_inspector.value_statements import (
     ExplicitValue,
     DerivedValue,

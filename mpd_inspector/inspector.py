@@ -8,25 +8,29 @@ from mpd_inspector.parser.enums import (
     AddressingMode,
     TemplateVariable,
 )
-import mpd_inspector.parser.tags as tags
+from mpd_inspector.parser.parser import Scte35Parser
+from threefive import Cue
+import mpd_inspector.parser.mpd_tags as mpd_tags
+from mpd_inspector.parser.scte35_enums import SpliceCommandType
+from mpd_inspector.parser.scte35_tags import Signal
 from .value_statements import ExplicitValue, DefaultValue, DerivedValue, InheritedValue
 from datetime import timedelta, datetime
 
 
-class MPDInspector:
-    def __init__(self, mpd: tags.MPD):
-        self._mpd = mpd
-        self._base_uri = ""
-        self._enhance()
-
-    def _enhance(self):
-        # self._mpd.is_vod = self.is_vod()
-        # self._mpd.is_live = self.is_live()
-        for period in self._mpd.periods:
-            PeriodInspector(self._mpd, period)
+class BaseInspector:
+    def __init__(self, **kwargs):
+        self._kwargs = kwargs
+        self._tag = None
 
     def __getattr__(self, name):
-        return getattr(self._mpd, name)
+        """Defers calls to unknown properties or methods to the tag"""
+        return getattr(self._tag, name)
+
+
+class MPDInspector(BaseInspector):
+    def __init__(self, mpd: mpd_tags.MPD):
+        self._tag = mpd
+        self._base_uri = ""
 
     @property
     def base_uri(self) -> str:
@@ -37,12 +41,12 @@ class MPDInspector:
         self._base_uri = value
 
     def is_vod(self):
-        if self._mpd.type == PresentationType.STATIC:
+        if self._tag.type == PresentationType.STATIC:
             return True
         return False
 
     def is_live(self):
-        if self._mpd.type == PresentationType.DYNAMIC:
+        if self._tag.type == PresentationType.DYNAMIC:
             return True
         return False
 
@@ -54,13 +58,13 @@ class MPDInspector:
     def periods(self):
         return [
             PeriodInspector(mpd_inspector=self, period=period)
-            for period in self._mpd.periods
+            for period in self._tag.periods
         ]
 
     @cached_property
     def availability_start_time(self):
         # Calculation logic
-        orig_value = self._mpd.availability_start_time
+        orig_value = self._tag.availability_start_time
         if orig_value:
             return ExplicitValue(orig_value)
         else:
@@ -68,37 +72,37 @@ class MPDInspector:
 
     @cached_property
     def full_urls(self):
-        if self._mpd.base_urls:
+        if self._tag.base_urls:
             return [
                 urljoin(self.base_uri, base_url.text)
-                for base_url in self._mpd.base_urls
+                for base_url in self._tag.base_urls
             ]
         return [self.base_uri]
 
 
-class PeriodInspector:
-    def __init__(self, mpd_inspector: MPDInspector, period: tags.Period):
+class PeriodInspector(BaseInspector):
+    def __init__(self, mpd_inspector: MPDInspector, period: mpd_tags.Period):
         self._mpd_inspector = mpd_inspector
-        self._period = period
-        self._enhance()
-
-    def _enhance(self):
-        pass
-
-    def __getattr__(self, name):
-        return getattr(self._period, name)
+        self._tag = period
 
     @cached_property
     def adaptation_sets(self):
         return [
             AdaptationSetInspector(period_inspector=self, adaptation_set=adaptation_set)
-            for adaptation_set in self._period.adaptation_sets
+            for adaptation_set in self._tag.adaptation_sets
+        ]
+
+    @cached_property
+    def event_streams(self):
+        return [
+            EventStreamInspector(period_inspector=self, event_stream=event_stream)
+            for event_stream in self._tag.event_streams
         ]
 
     @cached_property
     def index(self) -> int:
         """Return the index of the period in the MPD"""
-        return self._mpd_inspector._mpd.periods.index(self._period)
+        return self._mpd_inspector._tag.periods.index(self._tag)
 
     @cached_property
     def xpath(self) -> str:
@@ -112,16 +116,16 @@ class PeriodInspector:
 
     @cached_property
     def type(self) -> PeriodType:
-        if self._period.start:
+        if self._tag.start:
             return PeriodType.REGULAR
         else:
             if self._mpd_inspector.type == PresentationType.DYNAMIC:
                 if self.index == 0 or (
-                    not self._mpd_inspector._mpd.periods[self.index - 1].duration
+                    not self._mpd_inspector._tag.periods[self.index - 1].duration
                 ):
                     return PeriodType.EARLY_AVAILABLE
 
-        if self._period.duration and len(self._mpd_inspector._mpd.periods) > (
+        if self._tag.duration and len(self._mpd_inspector._tag.periods) > (
             self.index + 1
         ):
             return PeriodType.EARLY_TERMINATED
@@ -129,13 +133,13 @@ class PeriodInspector:
     @cached_property
     def start_time(self) -> datetime:
         """Returns the clock time for the start of the period, calculating it from other periods if necessary"""
-        if self._period.start:
-            start_offset = self._period.start
+        if self._tag.start:
+            start_offset = self._tag.start
         else:
             # TODO - implement all other possible cases
             if (
                 self.index > 0
-                and self._mpd_inspector._mpd.periods[self.index - 1].duration
+                and self._mpd_inspector._tag.periods[self.index - 1].duration
             ):
                 start_offset = (
                     self._mpd_inspector.periods[self.index - 1].start_time
@@ -152,12 +156,12 @@ class PeriodInspector:
 
     @cached_property
     def duration(self) -> timedelta:
-        if self._period.duration:
-            return ExplicitValue(self._period.duration)
+        if self._tag.duration:
+            return ExplicitValue(self._tag.duration)
         else:
             # TODO - implement all other possible cases
             #  - Last period, use the mediaPresentationDuration (for VOD), or calculate from segments
-            if self.index < len(self._mpd_inspector._mpd.periods) - 1:
+            if self.index < len(self._mpd_inspector._tag.periods) - 1:
                 return DerivedValue(
                     self._mpd_inspector.periods[self.index + 1].start_time
                     - self.start_time
@@ -165,9 +169,9 @@ class PeriodInspector:
             # VOD
             if self._mpd_inspector.type == PresentationType.STATIC:
                 # Single Period
-                if len(self._mpd_inspector._mpd.periods) == 1:
+                if len(self._mpd_inspector._tag.periods) == 1:
                     return DerivedValue(
-                        self._mpd_inspector._mpd.media_presentation_duration
+                        self._mpd_inspector._tag.media_presentation_duration
                     )
 
     @cached_property
@@ -179,37 +183,28 @@ class PeriodInspector:
 
     @cached_property
     def full_urls(self):
-        if not self._period.base_urls:
+        if not self._tag.base_urls:
             return self._mpd_inspector.full_urls
         else:
             return [
                 urljoin(mpd_base_url, period_base_url.text)
                 for mpd_base_url in self._mpd_inspector.full_urls
-                for period_base_url in self._period.base_urls
+                for period_base_url in self._tag.base_urls
             ]
 
 
-class AdaptationSetInspector:
+class AdaptationSetInspector(BaseInspector):
     def __init__(
-        self, period_inspector: PeriodInspector, adaptation_set: tags.AdaptationSet
+        self, period_inspector: PeriodInspector, adaptation_set: mpd_tags.AdaptationSet
     ):
         self._period_inspector = period_inspector
         self._mpd_inspector = period_inspector._mpd_inspector
-        self._adaptation_set = adaptation_set
-        self._enhance()
-
-    def _enhance(self):
-        pass
-
-    def __getattr__(self, name):
-        return getattr(self._adaptation_set, name)
+        self._tag = adaptation_set
 
     @cached_property
     def index(self) -> int:
         """Return the index of the period in the MPD"""
-        return self._period_inspector._period.adaptation_sets.index(
-            self._adaptation_set
-        )
+        return self._period_inspector._tag.adaptation_sets.index(self._tag)
 
     @cached_property
     def xpath(self) -> str:
@@ -222,45 +217,36 @@ class AdaptationSetInspector:
             RepresentationInspector(
                 adaptation_set_inspector=self, representation=representation
             )
-            for representation in self._adaptation_set.representations
+            for representation in self._tag.representations
         ]
 
     @cached_property
     def full_urls(self):
-        if not self._adaptation_set.base_urls:
+        if not self._tag.base_urls:
             return self._period_inspector.full_urls
         else:
             return [
                 urljoin(period_base_url, adapt_base_url.text)
                 for period_base_url in self._period_inspector.full_urls
-                for adapt_base_url in self._adaptation_set.base_urls
+                for adapt_base_url in self._tag.base_urls
             ]
 
 
-class RepresentationInspector:
+class RepresentationInspector(BaseInspector):
     def __init__(
         self,
         adaptation_set_inspector: AdaptationSetInspector,
-        representation: tags.Representation,
+        representation: mpd_tags.Representation,
     ):
         self._adaptation_set_inspector = adaptation_set_inspector
         self._period_inspector = adaptation_set_inspector._period_inspector
         self._mpd_inspector = adaptation_set_inspector._mpd_inspector
-        self._representation = representation
-        self._enhance()
-
-    def _enhance(self):
-        pass
-
-    def __getattr__(self, name):
-        return getattr(self._representation, name)
+        self._tag = representation
 
     @cached_property
     def index(self) -> int:
         """Return the index of the period in the MPD"""
-        return self._adaptation_set_inspector._adaptation_set.representations.index(
-            self._representation
-        )
+        return self._adaptation_set_inspector._tag.representations.index(self._tag)
 
     @cached_property
     def xpath(self) -> str:
@@ -269,13 +255,13 @@ class RepresentationInspector:
 
     @cached_property
     def full_urls(self):
-        if not self._representation.base_urls:
+        if not self._tag.base_urls:
             return self._adaptation_set_inspector.full_urls
         else:
             return [
                 urljoin(period_base_url, repr_base_url.text)
                 for period_base_url in self._period_inspector.full_urls
-                for repr_base_url in self._representation.base_urls
+                for repr_base_url in self._tag.base_urls
             ]
 
     @cached_property
@@ -286,7 +272,7 @@ class RepresentationInspector:
         return SegmentInformationInspector(self)
 
 
-class SegmentInformationInspector:
+class SegmentInformationInspector(BaseInspector):
     def __init__(self, representation_inspector: RepresentationInspector):
         self._representation_inspector = representation_inspector
         self._adaptation_set_inspector = (
@@ -294,14 +280,7 @@ class SegmentInformationInspector:
         )
         self._period_inspector = representation_inspector._period_inspector
         self._mpd_inspector = representation_inspector._mpd_inspector
-        self._enhance()
-
-    def _enhance(self):
-        pass
-
-    def __getattr__(self, name):
-        # any unknown attr, we send to the original segment definition
-        return getattr(self.tag, name)
+        self._tag = self.tag
 
     @cached_property
     def tag(self):
@@ -334,15 +313,15 @@ class SegmentInformationInspector:
 
     @cached_property
     def addressing_mode(self):
-        if isinstance(self.tag.value, tags.SegmentBase):
+        if isinstance(self.tag.value, mpd_tags.SegmentBase):
             return AddressingMode.INDEXED
         if (
-            isinstance(self.tag.value, tags.SegmentTemplate)
+            isinstance(self.tag.value, mpd_tags.SegmentTemplate)
             and not self.tag.segment_timeline
         ):
             return AddressingMode.SIMPLE
         if (
-            isinstance(self.tag.value, tags.SegmentTemplate)
+            isinstance(self.tag.value, mpd_tags.SegmentTemplate)
             and self.tag.segment_timeline
         ):
             return AddressingMode.EXPLICIT
@@ -456,3 +435,77 @@ class MediaSegment:
     def end_time(self):
         if self.start_time:
             return self.start_time + timedelta(seconds=self.duration)
+
+
+class EventStreamInspector(BaseInspector):
+    def __init__(
+        self, period_inspector: PeriodInspector, event_stream: mpd_tags.EventStream
+    ):
+        self._period_inspector = period_inspector
+        self._tag = event_stream
+
+    @cached_property
+    def events(self):
+        evs = []
+        for event in self._tag.events:
+            if self.scheme_id_uri == "urn:scte:scte35:2013:xml":
+                evs.append(Scte35XmlEventInspector(self, event))
+            elif self.scheme_id_uri == "urn:scte:scte35:2014:xml+bin":
+                evs.append(Scte35BinaryEventInspector(self, event))
+            else:
+                evs.append(EventInspector(self, event))
+        return evs
+
+
+class EventInspector(BaseInspector):
+    def __init__(
+        self, event_stream_inspector: EventStreamInspector, event: mpd_tags.Event
+    ):
+        self._event_stream_inspector = event_stream_inspector
+        self._tag = event
+
+    @cached_property
+    def content(self):
+        return self._tag.content
+
+    @cached_property
+    def presentation_time(self):
+        relative_offset = self._tag.presentation_time or 0
+        timescale = self._event_stream_inspector._tag.timescale
+        period_start_time = self._event_stream_inspector._period_inspector.start_time
+        return period_start_time + timedelta(seconds=relative_offset / timescale)
+
+    @cached_property
+    def duration(self):
+        if self._tag.duration:
+            return timedelta(
+                seconds=self._tag.duration / self._event_stream_inspector._tag.timescale
+            )
+
+
+class Scte35EventInspector(EventInspector):
+    pass
+
+
+class Scte35BinaryEventInspector(Scte35EventInspector):
+    @cached_property
+    def content(self):
+        signal: Signal = Scte35Parser.from_element(self._tag.content[0])
+        cue = Cue(signal.binary)
+        cue.decode()
+        return cue
+
+    @cached_property
+    def command_type(self):
+        return SpliceCommandType(self.content.command.command_type)
+
+
+class Scte35XmlEventInspector(Scte35EventInspector):
+    @cached_property
+    def content(self):
+        # According to DASH-IF IOP v4.3 10.15.3, The Event should contain only 1 element (apparently)
+        return Scte35Parser.from_element(self._tag.content[0])
+
+    @cached_property
+    def command_type(self):
+        return self.content.command_type
