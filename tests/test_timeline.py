@@ -26,6 +26,10 @@ def test_inspect_vod_file(input_file):
             start=datetime.fromisoformat("2024-08-05T12:19:29.74700Z"),
             end=datetime.fromisoformat("2024-08-05T12:22:31.66400Z"),
             duration=timedelta(minutes=3, seconds=1.917),
+            first_segment_starts=[
+                datetime.fromisoformat("2024-08-05T12:21:44.330333Z"),
+                datetime.fromisoformat("2024-08-05T12:21:44.339000Z"),
+            ],
         ),
         dict(
             start=datetime.fromisoformat("2024-08-05T12:22:31.66400Z"),
@@ -43,3 +47,15 @@ def test_inspect_vod_file(input_file):
         assert period.start_time == expected_periods[i]["start"]
         assert period.end_time == expected_periods[i]["end"]
         assert period.duration == expected_periods[i]["duration"]
+
+        for j, adapset in enumerate(period.adaptation_sets):
+            for rep in adapset.representations:
+                # slightly optimistic case as segments align with period start
+                segments = list(rep.segment_information.segments)
+                if expected_periods[i].get("first_segment_starts"):
+                    assert (
+                        segments[0].start_time
+                        == expected_periods[i]["first_segment_starts"][j]
+                    )
+                else:
+                    assert segments[0].start_time == expected_periods[i]["start"]

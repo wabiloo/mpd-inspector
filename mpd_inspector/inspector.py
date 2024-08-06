@@ -404,8 +404,14 @@ class SegmentInformationInspector:
 
     def _generate_segments_from_explicit_time_addressing(self):
         def _generate_media_segment(segment_start, duration, timescale):
+            # The segment start time in the MPD timeline is determined by the delta
+            # between S@t and the SegmentTemplate@presentationTimeOffset (which corresponds to the Period start time)
+            segment_start_time = self._period_inspector.start_time + timedelta(
+                seconds=(segment_start - self.tag.presentation_time_offset) / timescale
+            )
+
             return MediaSegment(
-                start=segment_start / timescale,
+                start_time=segment_start_time,
                 duration=duration / timescale,
                 urls=self.full_urls("media", {"$Time$": segment_start}),
                 init_urls=self.full_urls("initialization", {}),
@@ -414,6 +420,7 @@ class SegmentInformationInspector:
         timescale = self.tag.value.timescale
         segment_start = None
         for segment in self.tag.segment_timeline.segments:
+            if segment.t is not None:
                 segment_start = segment.t
 
             yield _generate_media_segment(segment_start, segment.d, timescale)
@@ -431,21 +438,21 @@ class MediaSegment:
         duration: float,
         init_urls: List[str] = [],
         number: Optional[int] = None,
-        start: Optional[datetime | float] = None,
+        start_time: Optional[datetime | float] = None,
     ):
         self.urls = urls
         self.init_urls = init_urls
         self.duration = duration
         self.number = number
-        if isinstance(start, float):
-            start = timedelta(seconds=start)
+        if isinstance(start_time, float):
+            self.start_time = datetime.fromtimestamp(start_time)
         else:
-            self.start = start
+            self.start_time = start_time
 
     def __repr__(self):
         return f"MediaSegment({self.urls})"
 
     @cached_property
-    def end(self):
-        if self.start:
-            return self.start + timedelta(seconds=self.duration)
+    def end_time(self):
+        if self.start_time:
+            return self.start_time + timedelta(seconds=self.duration)
