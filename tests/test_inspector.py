@@ -15,7 +15,7 @@ from src.mpd_inspector.inspector import (
 from src.mpd_parser.tags import SegmentTemplate, SegmentTimeline
 from src.mpd_inspector.value_statements import (
     ExplicitValue,
-    ImplicitValue,
+    DerivedValue,
     InheritedValue,
 )
 from src.mpd_parser.enums import PresentationType, AddressingMode, TemplateVariable
@@ -129,7 +129,7 @@ def test_inspect_live_manifest_multiperiod(input_file):
     assert inspector.periods[0].start_time == datetime.fromisoformat(
         "2024-08-05 12:19:29.74700Z"
     )
-    assert isinstance(inspector.periods[0].duration, ImplicitValue)
+    assert isinstance(inspector.periods[0].duration, DerivedValue)
     assert inspector.periods[0].duration.value == timedelta(seconds=181.917)
 
     assert inspector.periods[1].sequence == 2

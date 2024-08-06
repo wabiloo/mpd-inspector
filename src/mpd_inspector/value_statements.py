@@ -82,7 +82,7 @@ class DefaultValue(StatedValue):
         return f"DefaultValue({self.value})"
 
 
-class ImplicitValue(StatedValue):
+class DerivedValue(StatedValue):
 
     def __repr__(self):
         return f"ImplicitValue({self.value})"

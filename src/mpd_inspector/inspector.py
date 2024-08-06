@@ -9,7 +9,7 @@ from ..mpd_parser.enums import (
     TemplateVariable,
 )
 import src.mpd_parser.tags as tags
-from .value_statements import ExplicitValue, DefaultValue, ImplicitValue, InheritedValue
+from .value_statements import ExplicitValue, DefaultValue, DerivedValue, InheritedValue
 from datetime import timedelta, datetime
 
 
@@ -146,7 +146,7 @@ class PeriodInspector:
 
         # Add it to the availabilityStartTime
         if self._mpd_inspector.availability_start_time:
-            return ImplicitValue(
+            return DerivedValue(
                 self._mpd_inspector.availability_start_time + start_offset
             )
 
@@ -158,7 +158,7 @@ class PeriodInspector:
             # TODO - implement all other possible cases
             #  - Last period, use the mediaPresentationDuration (for VOD), or calculate from segments
             if self.index < len(self._mpd_inspector._mpd.periods) - 1:
-                return ImplicitValue(
+                return DerivedValue(
                     self._mpd_inspector.periods[self.index + 1].start_time
                     - self.start_time
                 )
@@ -166,7 +166,7 @@ class PeriodInspector:
             if self._mpd_inspector.type == PresentationType.STATIC:
                 # Single Period
                 if len(self._mpd_inspector._mpd.periods) == 1:
-                    return ImplicitValue(
+                    return DerivedValue(
                         self._mpd_inspector._mpd.media_presentation_duration
                     )
 
