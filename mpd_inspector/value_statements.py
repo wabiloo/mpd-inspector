@@ -63,6 +63,9 @@ class StatedValue:
             return self.value >= other.value
         return self.value >= other
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     def __repr__(self):
         return f"StatedValue({self.value})"
 
