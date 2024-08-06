@@ -546,7 +546,7 @@ class AdaptationSet(RepresentationBase):  # pylint: disable=too-many-public-meth
         ]
 
 
-class Segment(Tag):
+class S(Tag):
     """S tag representation. A single segment of video"""
 
     @cached_property
@@ -671,7 +671,7 @@ class SegmentTimeline(Tag):
     @cached_property
     def segments(self):
         return [
-            Segment(member)
+            S(member)
             for member in self.element.xpath(LOOKUP_STR_FORMAT.format(target="S"))
         ]
 
@@ -690,6 +690,23 @@ class MultipleSegmentBaseInformationMixin:
     @cached_property
     def start_number(self):
         return get_int_value(self.element.attrib.get("startNumber"))
+
+    @cached_property
+    def presentation_time_offset(self):
+        return get_int_value(self.element.attrib.get("presentationTimeOffset"))
+
+    @cached_property
+    def availability_time_offset(self):
+        return get_float_value(self.element.attrib.get("availabilityTimeOffset"))
+
+    @cached_property
+    def availability_time_complete(self):
+        return get_bool_value(self.element.attrib.get("availabilityTimeComplete"))
+
+    @cached_property
+    def initialization(self):
+        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="Initialization"))
+        return Initialization(nodes[0]) if nodes else None
 
     @cached_property
     def segment_timeline(self):
@@ -714,23 +731,6 @@ class SegmentBase(Tag, MultipleSegmentBaseInformationMixin):
     @cached_property
     def index_range_exact(self):
         return get_bool_value(self.element.attrib.get("indexRangeExact"))
-
-    @cached_property
-    def presentation_time_offset(self):
-        return get_int_value(self.element.attrib.get("presentationTimeOffset"))
-
-    @cached_property
-    def availability_time_offset(self):
-        return get_float_value(self.element.attrib.get("availabilityTimeOffset"))
-
-    @cached_property
-    def availability_time_complete(self):
-        return get_bool_value(self.element.attrib.get("availabilityTimeComplete"))
-
-    @cached_property
-    def initialization(self):
-        nodes = self.element.xpath(LOOKUP_STR_FORMAT.format(target="Initialization"))
-        return Initialization(nodes[0]) if nodes else None
 
     @cached_property
     def representation_index(self):

@@ -280,7 +280,9 @@ class RepresentationInspector:
 
     @cached_property
     def segment_information(self):
-        """Return the element that defines the way to access the media segments"""
+        """Return the element that defines the way to access the media segments.
+        The term 'Segment Information' is taken from ISO/IEC 23009-1, 5.3.9.2.1"""
+        
         return SegmentInformationInspector(self)
 
 
