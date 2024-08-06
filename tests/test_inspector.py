@@ -56,7 +56,7 @@ def test_inspect_vod_file(input_file):
     assert repr0.xpath == "//MPD/Period[1]/AdaptationSet[1]/Representation[1]"
 
     segment_info = repr0.segment_information
-    assert isinstance(segment_info.info, InheritedValue)
+    assert isinstance(segment_info.tag, InheritedValue)
     assert segment_info.addressing_mode == AddressingMode.SIMPLE
     assert segment_info.addressing_template == TemplateVariable.NUMBER
 
@@ -92,7 +92,7 @@ def test_inspect_live_manifest(input_file):
     assert video_seg_info.addressing_mode == AddressingMode.EXPLICIT
     assert video_seg_info.addressing_template == TemplateVariable.TIME
 
-    assert isinstance(video_seg_info.info.value, SegmentTemplate)
+    assert isinstance(video_seg_info.tag.value, SegmentTemplate)
 
     video_segment_generator = video_seg_info.segments
     segment_list = list(video_segment_generator)

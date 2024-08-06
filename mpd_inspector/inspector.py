@@ -282,7 +282,7 @@ class RepresentationInspector:
     def segment_information(self):
         """Return the element that defines the way to access the media segments.
         The term 'Segment Information' is taken from ISO/IEC 23009-1, 5.3.9.2.1"""
-        
+
         return SegmentInformationInspector(self)
 
 
@@ -301,10 +301,11 @@ class SegmentInformationInspector:
 
     def __getattr__(self, name):
         # any unknown attr, we send to the original segment definition
-        return getattr(self.info, name)
+        return getattr(self.tag, name)
 
     @cached_property
-    def info(self):
+    def tag(self):
+        """The MPD tag that contains the actual segment information"""
         # TODO - the DASH spec seems to allow for inheritance of properties, not just entire nodes
 
         # On the current node
@@ -333,33 +334,33 @@ class SegmentInformationInspector:
 
     @cached_property
     def addressing_mode(self):
-        if isinstance(self.info.value, tags.SegmentBase):
+        if isinstance(self.tag.value, tags.SegmentBase):
             return AddressingMode.INDEXED
         if (
-            isinstance(self.info.value, tags.SegmentTemplate)
-            and not self.info.segment_timeline
+            isinstance(self.tag.value, tags.SegmentTemplate)
+            and not self.tag.segment_timeline
         ):
             return AddressingMode.SIMPLE
         if (
-            isinstance(self.info.value, tags.SegmentTemplate)
-            and self.info.segment_timeline
+            isinstance(self.tag.value, tags.SegmentTemplate)
+            and self.tag.segment_timeline
         ):
             return AddressingMode.EXPLICIT
 
     @cached_property
     def addressing_template(self):
         if self.addressing_mode in [AddressingMode.EXPLICIT, AddressingMode.SIMPLE]:
-            if "$Time$" in self.info.value.media:
+            if "$Time$" in self.tag.value.media:
                 return TemplateVariable.TIME
-            if "$Number$" in self.info.value.media:
+            if "$Number$" in self.tag.value.media:
                 return TemplateVariable.NUMBER
 
-    def full_urls(self, attribute_name, replacements: dict):
+    def full_urls(self, attribute_name, replacements: dict = {}):
 
         all_replacements = {"$RepresentationID$": self._representation_inspector.id}
         all_replacements.update(replacements)
 
-        media_url = getattr(self.info.value, attribute_name)
+        media_url = getattr(self.tag.value, attribute_name)
         full_urls = []
         if media_url:
             for representation_url in self._representation_inspector.full_urls:
@@ -388,8 +389,8 @@ class SegmentInformationInspector:
             raise NotImplementedError("This addressing mode has not been implemented")
 
     def _generate_segments_from_simple_number_addressing(self):
-        segment_number = self.info.value.start_number
-        segment_duration = self.info.value.duration / self.info.value.timescale
+        segment_number = self.tag.value.start_number
+        segment_duration = self.tag.value.duration / self.tag.value.timescale
         total_duration_so_far = 0
         while total_duration_so_far < self._period_inspector.duration.total_seconds():
             yield MediaSegment(
@@ -410,10 +411,9 @@ class SegmentInformationInspector:
                 init_urls=self.full_urls("initialization", {}),
             )
 
-        timescale = self.info.value.timescale
+        timescale = self.tag.value.timescale
         segment_start = None
-        for segment in self.info.segment_timeline.segments:
-            if segment.t:
+        for segment in self.tag.segment_timeline.segments:
                 segment_start = segment.t
 
             yield _generate_media_segment(segment_start, segment.d, timescale)
