@@ -1,8 +1,8 @@
 import pytest
 from lxml import etree
 
-from src.mpd_parser.parser import Parser
-from src.mpd_parser.tags import Subset
+from mpd_inspector.parser.parser import MPDParser
+from mpd_inspector.parser.tags import Subset
 
 
 @pytest.mark.parametrize(
@@ -23,7 +23,7 @@ class TestMPD(TestTag):
         """test changes to min_buffer_time attribute"""
         with open(input_file, mode="r", encoding="UTF-8") as manifest_file:
             mpd_string = manifest_file.read()
-            mpd = Parser.from_string(mpd_string)
+            mpd = MPDParser.from_string(mpd_string)
             orig_value = mpd.min_buffer_time
             mpd.min_buffer_time = "something else"
             assert mpd.min_buffer_time != orig_value
@@ -38,7 +38,7 @@ class TestProgramInfo(TestTag):
         """this test an existing attrib value being changed"""
         with open(input_file, mode="r", encoding="UTF-8") as manifest_file:
             mpd_string = manifest_file.read()
-            mpd = Parser.from_string(mpd_string)
+            mpd = MPDParser.from_string(mpd_string)
             prog_info_list = mpd.program_informations
             orig_value = prog_info_list[0].more_info_url
             prog_info_list[0].more_info_url = "best-urls"
@@ -54,7 +54,7 @@ class TestProgramInfo(TestTag):
         """this test a new attrib that is being set"""
         with open(input_file, mode="r", encoding="UTF-8") as manifest_file:
             mpd_string = manifest_file.read()
-            mpd = Parser.from_string(mpd_string)
+            mpd = MPDParser.from_string(mpd_string)
             prog_info_list = mpd.program_informations
             orig_value = prog_info_list[0].lang
             prog_info_list[0].lang = "eng"
@@ -67,7 +67,7 @@ class TestProgramInfo(TestTag):
         """test text value change"""
         with open(input_file, mode="r", encoding="UTF-8") as manifest_file:
             mpd_string = manifest_file.read()
-            mpd = Parser.from_string(mpd_string)
+            mpd = MPDParser.from_string(mpd_string)
             prog_info_list = mpd.program_informations
             title_list = prog_info_list[0].titles
             first_title = title_list[0]

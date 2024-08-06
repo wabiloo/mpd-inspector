@@ -2,13 +2,13 @@ from functools import cached_property
 from typing import List, Optional
 from urllib.parse import urljoin
 
-from ..mpd_parser.enums import (
+from mpd_inspector.parser.enums import (
     PresentationType,
     PeriodType,
     AddressingMode,
     TemplateVariable,
 )
-import src.mpd_parser.tags as tags
+import mpd_inspector.parser.tags as tags
 from .value_statements import ExplicitValue, DefaultValue, DerivedValue, InheritedValue
 from datetime import timedelta, datetime
 

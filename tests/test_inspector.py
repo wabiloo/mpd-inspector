@@ -5,20 +5,24 @@ Test the inspection of full manifests
 from datetime import datetime, timedelta, timezone
 import isodate
 from pytest import mark
-from src.mpd_parser.parser import Parser
-from src.mpd_inspector.inspector import (
+from mpd_inspector.parser.parser import MPDParser
+from mpd_inspector.inspector import (
     AdaptationSetInspector,
     MPDInspector,
     PeriodInspector,
     RepresentationInspector,
 )
-from src.mpd_parser.tags import SegmentTemplate, SegmentTimeline
-from src.mpd_inspector.value_statements import (
+from mpd_inspector.parser.tags import SegmentTemplate, SegmentTimeline
+from mpd_inspector.value_statements import (
     ExplicitValue,
     DerivedValue,
     InheritedValue,
 )
-from src.mpd_parser.enums import PresentationType, AddressingMode, TemplateVariable
+from mpd_inspector.parser.enums import (
+    PresentationType,
+    AddressingMode,
+    TemplateVariable,
+)
 
 
 @mark.parametrize(
@@ -28,7 +32,7 @@ from src.mpd_parser.enums import PresentationType, AddressingMode, TemplateVaria
     ],
 )
 def test_inspect_vod_file(input_file):
-    mpd = Parser.from_file(input_file)
+    mpd = MPDParser.from_file(input_file)
     assert mpd.id == "f08e80da-bf1d-4e3d-8899-f0f6155f6efa"
     assert mpd.media_presentation_duration == timedelta(minutes=3, seconds=30)
 
@@ -71,7 +75,7 @@ def test_inspect_vod_file(input_file):
     ],
 )
 def test_inspect_live_manifest(input_file):
-    mpd = Parser.from_file(input_file)
+    mpd = MPDParser.from_file(input_file)
     inspector = MPDInspector(mpd)
 
     assert inspector.type == PresentationType.DYNAMIC
@@ -110,7 +114,7 @@ def test_inspect_live_manifest(input_file):
     ],
 )
 def test_inspect_live_manifest_multiperiod(input_file):
-    mpd = Parser.from_file(input_file)
+    mpd = MPDParser.from_file(input_file)
     inspector = MPDInspector(mpd)
     inspector.base_uri = (
         "https://stream.broadpeak.io/out/v1/6e0f649095ca4131b16bd0f877048629/index.mpd"

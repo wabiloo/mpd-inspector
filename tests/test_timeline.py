@@ -2,23 +2,12 @@
 Test the inspection of full manifests
 """
 
-from datetime import datetime, timedelta, timezone
-import isodate
+from datetime import datetime, timedelta
 from pytest import mark
-from src.mpd_parser.parser import Parser
-from src.mpd_inspector.inspector import (
-    AdaptationSetInspector,
+from mpd_inspector.parser.parser import MPDParser
+from mpd_inspector.inspector import (
     MPDInspector,
-    PeriodInspector,
-    RepresentationInspector,
 )
-from src.mpd_parser.tags import SegmentTemplate, SegmentTimeline
-from src.mpd_inspector.value_statements import (
-    ExplicitValue,
-    DerivedValue,
-    InheritedValue,
-)
-from src.mpd_parser.enums import PresentationType, AddressingMode, TemplateVariable
 
 
 @mark.parametrize(
@@ -28,7 +17,7 @@ from src.mpd_parser.enums import PresentationType, AddressingMode, TemplateVaria
     ],
 )
 def test_inspect_vod_file(input_file):
-    mpd = Parser.from_file(input_file)
+    mpd = MPDParser.from_file(input_file)
 
     inspector = MPDInspector(mpd)
 

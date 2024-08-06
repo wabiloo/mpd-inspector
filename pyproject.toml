@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "mpd-inspector"
-version = "0.1.0"
+version = "0.2.0"
 description = "A module to parse, analyze and validate MPEG-DASH MPD"
 authors = ["Fabre Lambeau <fabre.lambeau@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{ include = "src" }]
+packages = [{ include = "mpd_inspector" }]
 
 [tool.poetry.dependencies]
 python = "^3.9"

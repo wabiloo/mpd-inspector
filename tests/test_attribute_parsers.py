@@ -5,7 +5,7 @@ Test module for attribute_parsers.py
 from math import inf
 from pytest import mark
 
-from src.mpd_parser.attribute_parsers import get_float_value, get_bool_value
+from mpd_inspector.parser.attribute_parsers import get_float_value, get_bool_value
 
 
 @mark.parametrize(

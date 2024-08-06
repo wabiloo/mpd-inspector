@@ -6,8 +6,8 @@ from datetime import timedelta, datetime
 import os
 
 from pytest import mark
-from src.mpd_parser.parser import Parser
-from src.mpd_parser.enums import PresentationType
+from mpd_inspector.parser.parser import MPDParser
+from mpd_inspector.parser.enums import PresentationType
 
 from tests.conftest import touch_attributes, MANIFESTS_DIR
 
@@ -22,7 +22,7 @@ def test_mpd_tag(input_file):
     """Test that parser works and create MPD object"""
     with open(input_file, mode="r", encoding="UTF-8") as manifest_file:
         mpd_string = manifest_file.read()
-        mpd = Parser.from_string(mpd_string)
+        mpd = MPDParser.from_string(mpd_string)
         assert mpd.id is None
         assert mpd.type == PresentationType.STATIC
         assert mpd.min_buffer_time == timedelta(seconds=1.5)
@@ -49,7 +49,7 @@ def test_mpd_tag(input_file):
 )
 def test_parse_from_file_mpd_tag(input_file):
     """Test that parser works and create MPD object"""
-    mpd = Parser.from_file(input_file)
+    mpd = MPDParser.from_file(input_file)
     assert mpd.id is None
     assert mpd.type == PresentationType.STATIC
     assert mpd.min_buffer_time == timedelta(seconds=1.5)
@@ -74,7 +74,7 @@ def test_parse_from_file_mpd_tag(input_file):
 )
 def test_parse_from_url_mpd_tag(url):
     """Test that parser works and create MPD object from URL target"""
-    mpd = Parser.from_url(url)
+    mpd = MPDParser.from_url(url)
     assert mpd.id == "f08e80da-bf1d-4e3d-8899-f0f6155f6efa"
     assert mpd.type == PresentationType.STATIC
     assert mpd.min_buffer_time == timedelta(seconds=1)  # "P0Y0M0DT0H0M1.000S"
@@ -92,7 +92,7 @@ def test_parse_from_url_mpd_tag(url):
     assert mpd.periods[0].adaptation_sets[0].codecs == "avc1.42c00d"
 
 
-@mark.parametrize("parsing_type", [Parser.from_file, Parser.from_string])
+@mark.parametrize("parsing_type", [MPDParser.from_file, MPDParser.from_string])
 @mark.parametrize(
     "input_file", [f"{MANIFESTS_DIR}{name}" for name in os.listdir(MANIFESTS_DIR)]
 )
@@ -101,7 +101,7 @@ def test_touch_all_manifest_properties(input_file, parsing_type):
         Test each manifest by walking over it's xml tree.
     Does not verify values.
     """
-    if parsing_type == Parser.from_file:
+    if parsing_type == MPDParser.from_file:
         mpd = parsing_type(input_file)
         touch_attributes(mpd)
         return
@@ -122,9 +122,9 @@ def test_to_string(input_file):
     """test the converter from MPD object to string xml"""
     with open(input_file, mode="r") as manifest_file:
         mpd_string = manifest_file.read()
-        orig_mpd = Parser.from_string(mpd_string)
-        mpd_result = Parser.to_string(orig_mpd)
-        transformed_mpd = Parser.from_string(mpd_result)
+        orig_mpd = MPDParser.from_string(mpd_string)
+        mpd_result = MPDParser.to_string(orig_mpd)
+        transformed_mpd = MPDParser.from_string(mpd_result)
         assert (
             orig_mpd.program_informations[0].more_info_url
             == transformed_mpd.program_informations[0].more_info_url
