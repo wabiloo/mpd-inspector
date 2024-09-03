@@ -1,0 +1,333 @@
+<?xml version="1.0"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011"
+  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
+  type="static" mediaPresentationDuration="PT11M15.101333333S" maxSegmentDuration="PT3S"
+  minBufferTime="PT2S" profiles="urn:mpeg:dash:profile:isoff-live:2011">
+  <Period id="1_0.000000000" duration="PT30.040S">
+    <BaseURL>
+      ../../../../../bpkio-jitt/profile_978_577_71fed00f041dcaea/cb41a00abb0abbe667c3742d2ac46eb8/cb41a00abb0abbe667c3742d2ac46eb8.ism/dash/</BaseURL>
+    <AdaptationSet id="1" group="1" contentType="audio" segmentAlignment="true"
+      audioSamplingRate="44100" mimeType="audio/mp4" codecs="mp4a.40.2" startWithSAP="1">
+      <AudioChannelConfiguration
+        schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="44100"
+        initialization="index-$RepresentationID$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        media="index-$RepresentationID$-$Time$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        presentationTimeOffset="0">
+        <SegmentTimeline>
+          <S t="0" d="89088" />
+          <S d="88064" r="5" />
+          <S d="89088" />
+          <S d="88064" r="5" />
+          <S d="91136" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="audio=128000" bandwidth="128000" />
+    </AdaptationSet>
+    <AdaptationSet id="2" group="2" contentType="video" par="71:40" minBandwidth="500000"
+      maxBandwidth="5000000" maxWidth="1920" maxHeight="1080" segmentAlignment="true" sar="1:1"
+      mimeType="video/mp4" startWithSAP="1">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="90000"
+        initialization="index-$RepresentationID$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        media="index-$RepresentationID$-$Time$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        presentationTimeOffset="0">
+        <SegmentTimeline>
+          <S t="0" d="180000" r="14" />
+          <S d="3600" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="video=500000" bandwidth="500000" width="426" height="240"
+        codecs="avc1.42C00D" scanType="progressive" />
+      <Representation id="video=1600000" bandwidth="1600000" width="640" height="360"
+        codecs="avc1.4D401E" scanType="progressive" />
+      <Representation id="video=2300000" bandwidth="2300000" width="854" height="480"
+        codecs="avc1.4D401F" scanType="progressive" />
+      <Representation id="video=3200000" bandwidth="3200000" width="1280" height="720"
+        codecs="avc1.640020" scanType="progressive" />
+      <Representation id="video=5000000" bandwidth="5000000" width="1920" height="1080"
+        codecs="avc1.640028" scanType="progressive" />
+    </AdaptationSet>
+  </Period>
+  <Period id="1_30.040000000" duration="PT30S">
+    <BaseURL>
+      ../../../../../bpkio-jitt/profile_978_577_71fed00f041dcaea/6f631667f9783fd278b6d9c99c40fc3e/6f631667f9783fd278b6d9c99c40fc3e.ism/dash/</BaseURL>
+    <AdaptationSet id="1" group="1" contentType="audio" segmentAlignment="true"
+      audioSamplingRate="44100" mimeType="audio/mp4" codecs="mp4a.40.2" startWithSAP="1">
+      <AudioChannelConfiguration
+        schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="44100"
+        initialization="index-$RepresentationID$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        media="index-$RepresentationID$-$Time$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        presentationTimeOffset="0">
+        <SegmentTimeline>
+          <S t="0" d="89088" />
+          <S d="88064" r="5" />
+          <S d="89088" />
+          <S d="88064" r="5" />
+          <S d="90112" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="audio=128000" bandwidth="128000" />
+    </AdaptationSet>
+    <AdaptationSet id="2" group="2" contentType="video" par="71:40" minBandwidth="500000"
+      maxBandwidth="5000000" maxWidth="1920" maxHeight="1080" segmentAlignment="true" sar="1:1"
+      mimeType="video/mp4" startWithSAP="1">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="90000"
+        initialization="index-$RepresentationID$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        media="index-$RepresentationID$-$Time$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        presentationTimeOffset="0">
+        <SegmentTimeline>
+          <S t="0" d="180000" r="14" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="video=500000" bandwidth="500000" width="426" height="240"
+        codecs="avc1.42C00D" scanType="progressive" />
+      <Representation id="video=1600000" bandwidth="1600000" width="640" height="360"
+        codecs="avc1.4D401E" scanType="progressive" />
+      <Representation id="video=2300000" bandwidth="2300000" width="854" height="480"
+        codecs="avc1.4D401F" scanType="progressive" />
+      <Representation id="video=3200000" bandwidth="3200000" width="1280" height="720"
+        codecs="avc1.640020" scanType="progressive" />
+      <Representation id="video=5000000" bandwidth="5000000" width="1920" height="1080"
+        codecs="avc1.640028" scanType="progressive" />
+    </AdaptationSet>
+  </Period>
+  <Period id="1_60.040000000" duration="PT10M0.021333333S">
+    <BaseURL>dash/</BaseURL>
+    <AdaptationSet id="1" group="1" contentType="audio" lang="en" segmentAlignment="true"
+      audioSamplingRate="48000" mimeType="audio/mp4" codecs="mp4a.40.2" startWithSAP="1">
+      <AudioChannelConfiguration
+        schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="6" />
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="48000"
+        initialization="sintel-$RepresentationID$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        media="sintel-$RepresentationID$-$Time$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        presentationTimeOffset="0">
+        <SegmentTimeline>
+          <S t="0" d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="2" />
+          <S d="95232" />
+          <S d="96256" r="3" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="audio_eng=341480" bandwidth="341480" />
+    </AdaptationSet>
+    <AdaptationSet id="2" group="2" contentType="video" par="16:9" minBandwidth="500213"
+      maxBandwidth="4999439" maxWidth="1920" maxHeight="1080" segmentAlignment="true"
+      mimeType="video/mp4" startWithSAP="1">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="12800"
+        initialization="sintel-$RepresentationID$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        media="sintel-$RepresentationID$-$Time$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        presentationTimeOffset="0">
+        <SegmentTimeline>
+          <S t="0" d="25600" r="299" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="video=500213" bandwidth="500213" width="426" height="240" sar="640:639"
+        codecs="avc1.42C00D" scanType="progressive" />
+      <Representation id="video=1599984" bandwidth="1599984" width="640" height="360" sar="1:1"
+        codecs="avc1.4D401E" scanType="progressive" />
+      <Representation id="video=2299835" bandwidth="2299835" width="854" height="480"
+        sar="1280:1281" codecs="avc1.4D401F" scanType="progressive" />
+      <Representation id="video=3199725" bandwidth="3199725" width="1280" height="720" sar="1:1"
+        codecs="avc1.640020" scanType="progressive" />
+      <Representation id="video=4999439" bandwidth="4999439" width="1920" height="1080" sar="1:1"
+        codecs="avc1.640028" scanType="progressive" />
+    </AdaptationSet>
+  </Period>
+  <Period id="1_660.061333333" duration="PT15.040S">
+    <BaseURL>
+      ../../../../../bpkio-jitt/profile_978_577_71fed00f041dcaea/8ffbdf2f6905643ae04715a1d2800401/8ffbdf2f6905643ae04715a1d2800401.ism/dash/</BaseURL>
+    <AdaptationSet id="1" group="1" contentType="audio" segmentAlignment="true"
+      audioSamplingRate="44100" mimeType="audio/mp4" codecs="mp4a.40.2" startWithSAP="1">
+      <AudioChannelConfiguration
+        schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="44100"
+        initialization="index-$RepresentationID$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        media="index-$RepresentationID$-$Time$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        presentationTimeOffset="0">
+        <SegmentTimeline>
+          <S t="0" d="89088" />
+          <S d="88064" r="5" />
+          <S d="48128" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="audio=128000" bandwidth="128000" />
+    </AdaptationSet>
+    <AdaptationSet id="2" group="2" contentType="video" par="71:40" minBandwidth="500000"
+      maxBandwidth="5000000" maxWidth="1920" maxHeight="1080" segmentAlignment="true" sar="1:1"
+      mimeType="video/mp4" startWithSAP="1">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="90000"
+        initialization="index-$RepresentationID$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        media="index-$RepresentationID$-$Time$.dash?bpkio_serviceid=2ab56412b1163ee17b1e882c28ac61f9&amp;bpkio_sessionid=10e0a3d7-c556276d-6f4f-43d8-9d18-14149ffc162f"
+        presentationTimeOffset="0">
+        <SegmentTimeline>
+          <S t="0" d="180000" r="6" />
+          <S d="93600" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="video=500000" bandwidth="500000" width="426" height="240"
+        codecs="avc1.42C00D" scanType="progressive" />
+      <Representation id="video=1600000" bandwidth="1600000" width="640" height="360"
+        codecs="avc1.4D401E" scanType="progressive" />
+      <Representation id="video=2300000" bandwidth="2300000" width="854" height="480"
+        codecs="avc1.4D401F" scanType="progressive" />
+      <Representation id="video=3200000" bandwidth="3200000" width="1280" height="720"
+        codecs="avc1.640020" scanType="progressive" />
+      <Representation id="video=5000000" bandwidth="5000000" width="1920" height="1080"
+        codecs="avc1.640028" scanType="progressive" />
+    </AdaptationSet>
+  </Period>
+</MPD>

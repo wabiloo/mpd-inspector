@@ -14,6 +14,7 @@ from mpd_inspector.inspector import (
 )
 from mpd_inspector.parser.mpd_tags import SegmentTemplate, SegmentTimeline
 from mpd_inspector.value_statements import (
+    DefaultValue,
     ExplicitValue,
     DerivedValue,
     InheritedValue,
@@ -149,3 +150,34 @@ def test_inspect_live_manifest_multiperiod(input_file):
     assert segment_list[0].urls == [
         "https://stream.broadpeak.io/out/v1/6e0f649095ca4131b16bd0f877048629/index_video_3_0_998695395616.mp4?m=1678459069&bpkio_serviceid=9bf31c7ff062936a58b598bc9efa90d4&bpkio_sessionid=10b0f41c170-232af2ef-2dfe-4c6f-bcb9-8e6bf5206496"
     ]
+
+
+@mark.parametrize(
+    "input_file",
+    [
+        "./manifests/broadpeakio-ssai-vod-multiperiod.mpd",
+    ],
+)
+def test_inspect_vod_manifest_multiperiod(input_file):
+    mpd = MPDParser.from_file(input_file)
+    inspector = MPDInspector(mpd)
+
+    assert inspector.id == mpd.id
+    assert inspector.unparsed_attr("availabilityStartTime") is None
+    assert inspector.availability_start_time is None
+    assert len(inspector.periods) == 4
+
+    assert inspector.periods[0].index == 0
+    assert inspector.periods[0].sequence == 1
+    assert isinstance(inspector.periods[0].start_time, DefaultValue)
+    assert inspector.periods[0].start_time == timedelta(seconds=0.0)
+    assert isinstance(inspector.periods[0].duration, ExplicitValue)
+    assert inspector.periods[0].duration.value == timedelta(seconds=30.04)
+    assert inspector.periods[0].end_time == timedelta(seconds=30.04)
+
+    assert inspector.periods[1].sequence == 2
+    assert isinstance(inspector.periods[1].start_time, DerivedValue)
+    assert inspector.periods[1].start_time == timedelta(seconds=30.04)
+    assert isinstance(inspector.periods[1].duration, ExplicitValue)
+    assert inspector.periods[1].duration.value == timedelta(seconds=30)
+    assert inspector.periods[1].end_time == timedelta(seconds=60.04)

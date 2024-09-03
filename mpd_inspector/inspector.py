@@ -134,25 +134,30 @@ class PeriodInspector(BaseInspector):
     def start_time(self) -> datetime:
         """Returns the clock time for the start of the period, calculating it from other periods if necessary"""
         if self._tag.start:
-            start_offset = self._tag.start
+            start_offset = ExplicitValue(self._tag.start)
         else:
             # TODO - implement all other possible cases
+            # pure VOD (static manifest), first period starts at 0
+            if self.index == 0 and self._mpd_inspector.type == PresentationType.STATIC:
+                start_offset = DefaultValue(timedelta(seconds=0))
+
+            # later periods for static and dynamic manifests
             if (
                 self.index > 0
                 and self._mpd_inspector._tag.periods[self.index - 1].duration
             ):
-                start_offset = (
+                start_offset = DerivedValue(
                     self._mpd_inspector.periods[self.index - 1].start_time
                     + self._mpd_inspector.periods[self.index - 1].duration
                 )
-            if self.index == 0 and self._mpd_inspector.type == PresentationType.STATIC:
-                return DefaultValue(0)
 
         # Add it to the availabilityStartTime
         if self._mpd_inspector.availability_start_time:
             return DerivedValue(
                 self._mpd_inspector.availability_start_time + start_offset
             )
+        else:
+            return start_offset
 
     @cached_property
     def duration(self) -> timedelta:

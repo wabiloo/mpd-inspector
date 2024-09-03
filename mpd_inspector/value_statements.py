@@ -88,7 +88,7 @@ class DefaultValue(StatedValue):
 class DerivedValue(StatedValue):
 
     def __repr__(self):
-        return f"ImplicitValue({self.value})"
+        return f"DerivedValue({self.value})"
 
 
 class InheritedValue(StatedValue):
