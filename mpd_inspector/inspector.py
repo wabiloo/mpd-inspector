@@ -369,6 +369,12 @@ class SegmentInformationInspector(BaseInspector):
         ):
             yield from self._generate_segments_from_explicit_time_addressing()
 
+        elif (
+            self.addressing_mode == AddressingMode.EXPLICIT
+            and self.addressing_template == TemplateVariable.NUMBER
+        ):
+            yield from self._generate_segments_from_explicit_number_addressing()
+
         else:
             raise NotImplementedError("This addressing mode has not been implemented")
 
@@ -377,42 +383,98 @@ class SegmentInformationInspector(BaseInspector):
         segment_duration = self.tag.value.duration / self.tag.value.timescale
         total_duration_so_far = 0
         while total_duration_so_far < self._period_inspector.duration.total_seconds():
+            total_duration_so_far += segment_duration
             yield MediaSegment(
                 number=segment_number,
                 duration=segment_duration,
                 urls=self.full_urls("media", {"$Number$": segment_number}),
                 init_urls=self.full_urls("initialization", {}),
+                duration_cumulative=total_duration_so_far,
             )
             segment_number += 1
-            total_duration_so_far += segment_duration
 
     def _generate_segments_from_explicit_time_addressing(self):
-        def _generate_media_segment(segment_start, duration, timescale):
-            # The segment start time in the MPD timeline is determined by the delta
-            # between S@t and the SegmentTemplate@presentationTimeOffset (which corresponds to the Period start time)
-            segment_start_time = self._period_inspector.start_time + timedelta(
-                seconds=(segment_start - self.tag.presentation_time_offset) / timescale
-            )
-
-            return MediaSegment(
-                start_time=segment_start_time,
-                duration=duration / timescale,
-                urls=self.full_urls("media", {"$Time$": segment_start}),
-                init_urls=self.full_urls("initialization", {}),
-            )
-
         timescale = self.tag.value.timescale
         segment_start = None
+        this_segment = None
         for segment in self.tag.segment_timeline.segments:
             if segment.t is not None:
                 segment_start = segment.t
 
-            yield _generate_media_segment(segment_start, segment.d, timescale)
+            this_segment = self._generate_media_segment(
+                start=segment_start,
+                duration=segment.d,
+                timescale=timescale,
+                previous_segment=this_segment,
+            )
             segment_start += segment.d
+            yield this_segment
+
             if segment.r:
                 for r in range(segment.r):
-                    yield _generate_media_segment(segment_start, segment.d, timescale)
+                    this_segment = self._generate_media_segment(
+                        start=segment_start,
+                        duration=segment.d,
+                        timescale=timescale,
+                        previous_segment=this_segment,
+                    )
                     segment_start += segment.d
+                    yield this_segment
+
+    def _generate_segments_from_explicit_number_addressing(self):
+        timescale = self.tag.value.timescale
+        segment_start = None
+        segment_number = self.start_number
+        this_segment = None
+        for segment in self.tag.segment_timeline.segments:
+            if segment.t is not None:
+                segment_start = segment.t
+
+            this_segment = self._generate_media_segment(
+                start=segment_start,
+                duration=segment.d,
+                timescale=timescale,
+                number=segment_number,
+                previous_segment=this_segment,
+            )
+            segment_start += segment.d
+            segment_number += 1
+            yield this_segment
+
+            if segment.r:
+                for r in range(segment.r):
+                    this_segment = self._generate_media_segment(
+                        start=segment_start,
+                        duration=segment.d,
+                        timescale=timescale,
+                        number=segment_number,
+                        previous_segment=this_segment,
+                    )
+                    segment_number += 1
+                    segment_start += segment.d
+                    yield this_segment
+
+    def _generate_media_segment(
+        self, start, duration, timescale, number=None, previous_segment=None
+    ):
+        # The segment start time in the MPD timeline is determined by the delta
+        # between S@t and the SegmentTemplate@presentationTimeOffset (which corresponds to the Period start time)
+        segment_start_time = self._period_inspector.start_time + timedelta(
+            seconds=(start - (self.tag.presentation_time_offset or 0)) / timescale
+        )
+        duration_in_s = duration / timescale
+        cumul_duration = duration_in_s
+        if previous_segment:
+            cumul_duration += previous_segment.duration_cumulative
+
+        return MediaSegment(
+            start_time=segment_start_time,
+            duration=duration_in_s,
+            number=number,
+            urls=self.full_urls("media", {"$Number$": number, "$Time$": start}),
+            init_urls=self.full_urls("initialization", {}),
+            duration_cumulative=cumul_duration,
+        )
 
 
 class MediaSegment:
@@ -423,6 +485,9 @@ class MediaSegment:
         init_urls: List[str] = [],
         number: Optional[int] = None,
         start_time: Optional[datetime | float] = None,
+        duration_cumulative: Optional[
+            float
+        ] = None,  # cumulative duration of all segments in the period up to and including this segment
     ):
         self.urls = urls
         self.init_urls = init_urls
@@ -432,6 +497,7 @@ class MediaSegment:
             self.start_time = datetime.fromtimestamp(start_time)
         else:
             self.start_time = start_time
+        self.duration_cumulative = duration_cumulative
 
     def __repr__(self):
         return f"MediaSegment({self.urls})"
