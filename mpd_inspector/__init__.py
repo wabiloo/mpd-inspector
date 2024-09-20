@@ -1,2 +1,2 @@
-from mpd_inspector.inspector import MPDInspector
+from mpd_inspector.inspector import MPDInspector, Scte35BinaryEventInspector, Scte35XmlEventInspector
 from mpd_inspector.parser import MPDParser

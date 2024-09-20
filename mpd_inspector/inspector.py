@@ -540,11 +540,22 @@ class EventInspector(BaseInspector):
         return self._tag.content
 
     @cached_property
-    def presentation_time(self):
+    def relative_presentation_time(self):
+        """Presentation time relative to the period start"""
         relative_offset = self._tag.presentation_time or 0
+        presentation_time_offset = (
+            self._event_stream_inspector._tag.presentation_time_offset or 0
+        )
         timescale = self._event_stream_inspector._tag.timescale
+
+        return timedelta(seconds=relative_offset / timescale) - timedelta(
+            seconds=presentation_time_offset / timescale
+        )
+
+    @cached_property
+    def presentation_time(self):
         period_start_time = self._event_stream_inspector._period_inspector.start_time
-        return period_start_time + timedelta(seconds=relative_offset / timescale)
+        return period_start_time + self.relative_presentation_time
 
     @cached_property
     def duration(self):

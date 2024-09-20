@@ -823,6 +823,10 @@ class EventStream(Descriptor):
         return get_int_value(self.element.attrib.get("timescale"))
 
     @cached_property
+    def presentation_time_offset(self):
+        return get_int_value(self.element.attrib.get("presentationTimeOffset"))
+
+    @cached_property
     def events(self):
         return [
             Event(member)
