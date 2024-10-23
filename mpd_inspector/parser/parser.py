@@ -11,7 +11,7 @@ from .exceptions import UnicodeDeclaredError, UnknownElementTreeParseError
 from .mpd_tags import MPD
 from .scte35_tags import Tag, SpliceInfoSection, Signal
 
-ENCODING_PATTERN = r"<\?.*?\s(encoding=\"\S*\").*\?>"
+ENCODING_PATTERN = r"<\?.*?\s(encoding=[\"\']\S*[\"\']).*\?>"
 
 
 class MPDParser:

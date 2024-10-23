@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mpd-inspector"
-version = "0.6.0"
+version = "0.7.0"
 description = "A module to parse, analyze and validate MPEG-DASH MPD"
 authors = ["Fabre Lambeau <fabre.lambeau@gmail.com>"]
 license = "MIT"

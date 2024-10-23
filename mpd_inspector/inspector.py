@@ -133,7 +133,7 @@ class PeriodInspector(BaseInspector):
     @cached_property
     def start_time(self) -> datetime:
         """Returns the clock time for the start of the period, calculating it from other periods if necessary"""
-        if self._tag.start:
+        if self._tag.start is not None:
             start_offset = ExplicitValue(self._tag.start)
         else:
             # TODO - implement all other possible cases
