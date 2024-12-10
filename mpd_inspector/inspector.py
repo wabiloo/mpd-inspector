@@ -1,20 +1,18 @@
+from datetime import datetime, timedelta
 from functools import cached_property
 from typing import List, Optional
 from urllib.parse import urljoin
 
-from mpd_inspector.parser.enums import (
-    PresentationType,
-    PeriodType,
-    AddressingMode,
-    TemplateVariable,
-)
-from mpd_inspector.parser.parser import Scte35Parser
+from lxml import etree
 from threefive import Cue
+
 import mpd_inspector.parser.mpd_tags as mpd_tags
+from mpd_inspector.parser.enums import (AddressingMode, PeriodType,
+                                        PresentationType, TemplateVariable)
 from mpd_inspector.parser.scte35_enums import SpliceCommandType
-from mpd_inspector.parser.scte35_tags import Signal
-from .value_statements import ExplicitValue, DefaultValue, DerivedValue, InheritedValue
-from datetime import timedelta, datetime
+
+from .value_statements import (DefaultValue, DerivedValue, ExplicitValue,
+                               InheritedValue)
 
 
 class BaseInspector:
@@ -340,7 +338,6 @@ class SegmentInformationInspector(BaseInspector):
                 return TemplateVariable.NUMBER
 
     def full_urls(self, attribute_name, replacements: dict = {}):
-
         all_replacements = {"$RepresentationID$": self._representation_inspector.id}
         all_replacements.update(replacements)
 
@@ -566,28 +563,43 @@ class EventInspector(BaseInspector):
 
 
 class Scte35EventInspector(EventInspector):
-    pass
-
-
-class Scte35BinaryEventInspector(Scte35EventInspector):
     @cached_property
     def content(self):
-        signal: Signal = Scte35Parser.from_element(self._tag.content[0])
-        cue = Cue(signal.binary)
-        cue.decode()
-        return cue
+        # According to DASH-IF IOP v4.3 10.15.3, The Event should contain only 1 element (apparently)
+        # return Scte35Parser.from_element(self._tag.content[0])
+        element = self._tag.content[0]
+        
+        # force the namespace to be the standard one (required by `threefive`)
+        namespace = "https://scte.org/schemas/35"
+        change_namespace(element, namespace)
+
+        payload = etree.tostring(element).decode()
+        return Cue(payload)
 
     @cached_property
     def command_type(self):
         return SpliceCommandType(self.content.command.command_type)
 
 
-class Scte35XmlEventInspector(Scte35EventInspector):
-    @cached_property
-    def content(self):
-        # According to DASH-IF IOP v4.3 10.15.3, The Event should contain only 1 element (apparently)
-        return Scte35Parser.from_element(self._tag.content[0])
+class Scte35BinaryEventInspector(Scte35EventInspector):
+    pass
 
-    @cached_property
-    def command_type(self):
-        return self.content.command_type
+
+class Scte35XmlEventInspector(Scte35EventInspector):
+    pass
+
+
+def change_namespace(element, new_namespace):
+    # Function to change namespace recursively
+
+    # Update the tag of the current element
+    if "}" in element.tag:
+        # Remove the old namespace and keep the local name
+        local_name = element.tag.split("}", 1)[1]
+    else:
+        local_name = element.tag
+    element.tag = f"{{{new_namespace}}}{local_name}"
+
+    # Recursively update children
+    for child in element:
+        change_namespace(child, new_namespace)
