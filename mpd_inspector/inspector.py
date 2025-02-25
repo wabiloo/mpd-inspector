@@ -4,7 +4,7 @@ from typing import List, Optional
 from urllib.parse import urljoin
 
 from lxml import etree
-from threefive import Cue
+from threefive3 import Cue
 
 import mpd_inspector.parser.mpd_tags as mpd_tags
 from mpd_inspector.parser.enums import (AddressingMode, PeriodType,

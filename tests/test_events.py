@@ -13,7 +13,7 @@ from mpd_inspector.inspector import (
 from lxml.etree import _Element
 
 from mpd_inspector.parser.scte35_enums import SpliceCommandType
-from threefive import Cue
+from threefive3 import Cue
 
 
 @mark.parametrize(
