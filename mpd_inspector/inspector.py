@@ -274,6 +274,20 @@ class RepresentationInspector(BaseInspector):
 
         return SegmentInformationInspector(self)
 
+    @cached_property
+    def width(self):
+        if self._tag.width:
+            return ExplicitValue(self._tag.width)
+        else:
+            return InheritedValue(self._adaptation_set_inspector.width)
+
+    @cached_property
+    def height(self):
+        if self._tag.height:
+            return ExplicitValue(self._tag.height)
+        else:
+            return InheritedValue(self._adaptation_set_inspector.height)
+
 
 class SegmentInformationInspector(BaseInspector):
     def __init__(self, representation_inspector: RepresentationInspector):
