@@ -1,0 +1,1 @@
+SCTE35_NAMESPACE = "https://scte.org/schemas/35"

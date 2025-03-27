@@ -13,6 +13,7 @@ from mpd_inspector.parser.scte35_enums import SpliceCommandType
 
 from .value_statements import (DefaultValue, DerivedValue, ExplicitValue,
                                InheritedValue)
+import mpd_inspector.namespaces as ns
 
 
 class BaseInspector:
@@ -583,24 +584,28 @@ class Scte35EventInspector(EventInspector):
         # return Scte35Parser.from_element(self._tag.content[0])
         element = self._tag.content[0]
         
-        # force the namespace to be the standard one (required by `threefive`)
-        namespace = "https://scte.org/schemas/35"
-        change_namespace(element, namespace)
+        # force the namespace to be the standard one
+        change_namespace(element, ns.SCTE35_NAMESPACE)
 
-        payload = etree.tostring(element).decode()
-        return Cue(payload)
+        return Cue(self._get_payload(element))
 
     @cached_property
     def command_type(self):
         return SpliceCommandType(self.content.command.command_type)
 
+    def _get_payload(self, element: etree._Element):
+        return etree.tostring(element).decode()
+
 
 class Scte35BinaryEventInspector(Scte35EventInspector):
-    pass
+    def _get_payload(self, element: etree._Element):
+        return element.findall(f"{ns.SCTE35_NAMESPACE}Binary")[0].text
 
 
 class Scte35XmlEventInspector(Scte35EventInspector):
+    # TODO - implement this
     pass
+
 
 
 def change_namespace(element, new_namespace):
