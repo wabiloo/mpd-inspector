@@ -3,27 +3,18 @@ Test the inspection of full manifests
 """
 
 from datetime import datetime, timedelta, timezone
+
 import isodate
 from pytest import mark
-from mpd_inspector.parser.parser import MPDParser
-from mpd_inspector.inspector import (
-    AdaptationSetInspector,
-    MPDInspector,
-    PeriodInspector,
-    RepresentationInspector,
-)
+
+from mpd_inspector.inspector import (AdaptationSetInspector, MPDInspector,
+                                     PeriodInspector, RepresentationInspector)
+from mpd_inspector.parser.enums import (AddressingMode, PresentationType,
+                                        TemplateVariable)
 from mpd_inspector.parser.mpd_tags import SegmentTemplate, SegmentTimeline
-from mpd_inspector.value_statements import (
-    DefaultValue,
-    ExplicitValue,
-    DerivedValue,
-    InheritedValue,
-)
-from mpd_inspector.parser.enums import (
-    PresentationType,
-    AddressingMode,
-    TemplateVariable,
-)
+from mpd_inspector.parser.parser import MPDParser
+from mpd_inspector.value_statements import (DefaultValue, DerivedValue,
+                                            ExplicitValue, InheritedValue)
 
 
 @mark.parametrize(
@@ -69,6 +60,7 @@ def test_inspect_vod_file(input_file):
     assert segment_list[-1].urls == ["../video/180_250000/dash/segment_52.m4s"]
 
 
+
 @mark.parametrize(
     "input_file",
     [
@@ -106,6 +98,7 @@ def test_inspect_live_manifest(input_file):
     segment_list = list(audio_segment_generator)
     assert len(segment_list) == 30
     assert segment_list[0].urls == ["index_audio_8_0_1997321287936.mp4?m=1678459069"]
+
 
 
 @mark.parametrize(
@@ -179,5 +172,7 @@ def test_inspect_vod_manifest_multiperiod(input_file):
     assert isinstance(inspector.periods[1].start_time, DerivedValue)
     assert inspector.periods[1].start_time == timedelta(seconds=30.04)
     assert isinstance(inspector.periods[1].duration, ExplicitValue)
+    assert inspector.periods[1].duration.value == timedelta(seconds=30)
+    assert inspector.periods[1].end_time == timedelta(seconds=60.04)
     assert inspector.periods[1].duration.value == timedelta(seconds=30)
     assert inspector.periods[1].end_time == timedelta(seconds=60.04)

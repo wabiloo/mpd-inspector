@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 from functools import cached_property
 from typing import List, Optional
@@ -6,14 +7,17 @@ from urllib.parse import urljoin
 from lxml import etree
 from threefive3 import Cue
 
+import mpd_inspector.namespaces as ns
 import mpd_inspector.parser.mpd_tags as mpd_tags
-from mpd_inspector.parser.enums import (AddressingMode, PeriodType,
-                                        PresentationType, TemplateVariable)
+from mpd_inspector.parser.enums import (
+    AddressingMode,
+    PeriodType,
+    PresentationType,
+    TemplateVariable,
+)
 from mpd_inspector.parser.scte35_enums import SpliceCommandType
 
-from .value_statements import (DefaultValue, DerivedValue, ExplicitValue,
-                               InheritedValue)
-import mpd_inspector.namespaces as ns
+from .value_statements import DefaultValue, DerivedValue, ExplicitValue, InheritedValue
 
 
 class BaseInspector:
@@ -106,7 +110,7 @@ class PeriodInspector(BaseInspector):
     @cached_property
     def xpath(self) -> str:
         """Return the XPath in the MPD to the period node"""
-        return self._mpd_inspector.xpath + f"/Period[{self.index+1}]"
+        return self._mpd_inspector.xpath + f"/Period[{self.index + 1}]"
 
     @cached_property
     def sequence(self) -> int:
@@ -213,7 +217,7 @@ class AdaptationSetInspector(BaseInspector):
     @cached_property
     def xpath(self) -> str:
         """Return the XPath in the MPD to the adaptation set node"""
-        return self._period_inspector.xpath + f"/AdaptationSet[{self.index+1}]"
+        return self._period_inspector.xpath + f"/AdaptationSet[{self.index + 1}]"
 
     @cached_property
     def representations(self):
@@ -255,7 +259,9 @@ class RepresentationInspector(BaseInspector):
     @cached_property
     def xpath(self) -> str:
         """Return the XPath in the MPD to the representation node"""
-        return self._adaptation_set_inspector.xpath + f"/Representation[{self.index+1}]"
+        return (
+            self._adaptation_set_inspector.xpath + f"/Representation[{self.index + 1}]"
+        )
 
     @cached_property
     def full_urls(self):
@@ -347,13 +353,16 @@ class SegmentInformationInspector(BaseInspector):
     @cached_property
     def addressing_template(self):
         if self.addressing_mode in [AddressingMode.EXPLICIT, AddressingMode.SIMPLE]:
-            if "$Time$" in self.tag.value.media:
+            if "$Time" in self.tag.value.media:
                 return TemplateVariable.TIME
-            if "$Number$" in self.tag.value.media:
+            if "$Number" in self.tag.value.media:
                 return TemplateVariable.NUMBER
 
     def full_urls(self, attribute_name, replacements: dict = {}):
-        all_replacements = {"$RepresentationID$": self._representation_inspector.id}
+        all_replacements = {
+            "$RepresentationID": self._representation_inspector.id,
+            "$Bandwidth": self._representation_inspector.bandwidth,
+        }
         all_replacements.update(replacements)
 
         media_url = getattr(self.tag.value, attribute_name)
@@ -361,31 +370,31 @@ class SegmentInformationInspector(BaseInspector):
         if media_url:
             for representation_url in self._representation_inspector.full_urls:
                 full_url = representation_url + media_url
-                for var, value in all_replacements.items():
-                    full_url = full_url.replace(var, str(value))
-            full_urls.append(full_url)
+                full_url = url_placeholder_replacer(full_url, all_replacements)
+                full_urls.append(full_url)
 
         return full_urls
 
     @cached_property
-    def segments(self):
+    def segments(self) -> List["MediaSegment"]:
+        """Return a list of all media segments"""
         if (
             self.addressing_mode == AddressingMode.SIMPLE
             and self.addressing_template == TemplateVariable.NUMBER
         ):
-            yield from self._generate_segments_from_simple_number_addressing()
+            return list(self._generate_segments_from_simple_number_addressing())
 
         elif (
             self.addressing_mode == AddressingMode.EXPLICIT
             and self.addressing_template == TemplateVariable.TIME
         ):
-            yield from self._generate_segments_from_explicit_time_addressing()
+            return list(self._generate_segments_from_explicit_time_addressing())
 
         elif (
             self.addressing_mode == AddressingMode.EXPLICIT
             and self.addressing_template == TemplateVariable.NUMBER
         ):
-            yield from self._generate_segments_from_explicit_number_addressing()
+            return list(self._generate_segments_from_explicit_number_addressing())
 
         else:
             raise NotImplementedError("This addressing mode has not been implemented")
@@ -399,7 +408,7 @@ class SegmentInformationInspector(BaseInspector):
             yield MediaSegment(
                 number=segment_number,
                 duration=segment_duration,
-                urls=self.full_urls("media", {"$Number$": segment_number}),
+                urls=self.full_urls("media", {"$Number": segment_number}),
                 init_urls=self.full_urls("initialization", {}),
                 duration_cumulative=total_duration_so_far,
             )
@@ -483,7 +492,7 @@ class SegmentInformationInspector(BaseInspector):
             start_time=segment_start_time,
             duration=duration_in_s,
             number=number,
-            urls=self.full_urls("media", {"$Number$": number, "$Time$": start}),
+            urls=self.full_urls("media", {"$Number": number, "$Time": start}),
             init_urls=self.full_urls("initialization", {}),
             duration_cumulative=cumul_duration,
         )
@@ -583,7 +592,7 @@ class Scte35EventInspector(EventInspector):
         # According to DASH-IF IOP v4.3 10.15.3, The Event should contain only 1 element (apparently)
         # return Scte35Parser.from_element(self._tag.content[0])
         element = self._tag.content[0]
-        
+
         # force the namespace to be the standard one
         change_namespace(element, ns.SCTE35_NAMESPACE)
 
@@ -599,13 +608,12 @@ class Scte35EventInspector(EventInspector):
 
 class Scte35BinaryEventInspector(Scte35EventInspector):
     def _get_payload(self, element: etree._Element):
-        return element.findall(f"{ns.SCTE35_NAMESPACE}Binary")[0].text
+        return element.findall(f"{{{ns.SCTE35_NAMESPACE}}}Binary")[0].text
 
 
 class Scte35XmlEventInspector(Scte35EventInspector):
     # TODO - implement this
     pass
-
 
 
 def change_namespace(element, new_namespace):
@@ -622,3 +630,16 @@ def change_namespace(element, new_namespace):
     # Recursively update children
     for child in element:
         change_namespace(child, new_namespace)
+
+
+def url_placeholder_replacer(url, values):
+    # Function to replace placeholders with values, allowing for optional formatter strings like $Number%05d$
+    def replacer(match):
+        var = match.group(1)
+        fmt = match.group(2)
+        val = values.get(var, var)
+        return (fmt % val) if fmt else str(val)
+
+    pattern = r"(\$[A-Za-z0-9_]+)(%[^$]+)?\$"
+    result = re.sub(pattern, replacer, url)
+    return result
