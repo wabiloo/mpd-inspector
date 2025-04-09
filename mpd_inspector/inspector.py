@@ -587,6 +587,14 @@ class EventInspector(BaseInspector):
 
 
 class Scte35EventInspector(EventInspector):
+    pass
+
+
+class Scte35BinaryEventInspector(Scte35EventInspector):
+    @cached_property
+    def command_type(self):
+        return SpliceCommandType(self.content.command.command_type)
+
     @cached_property
     def content(self):
         # According to DASH-IF IOP v4.3 10.15.3, The Event should contain only 1 element (apparently)
@@ -598,22 +606,19 @@ class Scte35EventInspector(EventInspector):
 
         return Cue(self._get_payload(element))
 
-    @cached_property
-    def command_type(self):
-        return SpliceCommandType(self.content.command.command_type)
-
-    def _get_payload(self, element: etree._Element):
-        return etree.tostring(element).decode()
-
-
-class Scte35BinaryEventInspector(Scte35EventInspector):
     def _get_payload(self, element: etree._Element):
         return element.findall(f"{{{ns.SCTE35_NAMESPACE}}}Binary")[0].text
 
 
 class Scte35XmlEventInspector(Scte35EventInspector):
-    # TODO - implement this
-    pass
+    @cached_property
+    def content(self):
+        # TODO (maybe) - parse the content into a Cue object
+        return self._tag.content[0]
+
+    @cached_property
+    def command_type(self):
+        return SpliceCommandType(self.content.command.command_type)
 
 
 def change_namespace(element, new_namespace):
