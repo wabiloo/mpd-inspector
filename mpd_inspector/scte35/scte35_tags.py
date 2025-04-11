@@ -4,7 +4,7 @@ you may come across when parsing SCTE35 XML information.
 """
 
 from functools import cached_property
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from lxml.etree import Element, QName
 
@@ -210,6 +210,194 @@ class Ext(Tag):
         return self.get_attr("timeFromSignal")
 
 
+class BreakDuration(Tag):
+    """BreakDuration tag representation"""
+
+    @cached_property
+    def auto_return(self) -> Optional[bool]:
+        return get_bool_value(self.get_attr("autoReturn"))
+
+    @cached_property
+    def duration(self) -> Optional[int]:
+        return get_int_value(self.get_attr("duration"))
+
+
+class AvailDescriptor(Tag):
+    """AvailDescriptor tag representation"""
+
+    @cached_property
+    def provider_avail_id(self) -> Optional[int]:
+        return get_int_value(self.get_attr("providerAvailId"))
+
+
+class DTMFDescriptor(Tag):
+    """DTMFDescriptor tag representation"""
+
+    @cached_property
+    def preroll(self) -> Optional[int]:
+        return get_int_value(self.get_attr("preroll"))
+
+    @cached_property
+    def chars(self) -> Optional[str]:
+        return self.get_attr("chars")
+
+
+class TimeDescriptor(Tag):
+    """TimeDescriptor tag representation"""
+
+    @cached_property
+    def tai_seconds(self) -> Optional[int]:
+        return get_int_value(self.get_attr("taiSeconds"))
+
+    @cached_property
+    def tai_ns(self) -> Optional[int]:
+        return get_int_value(self.get_attr("taiNs"))
+
+    @cached_property
+    def utc_offset(self) -> Optional[int]:
+        return get_int_value(self.get_attr("utcOffset"))
+
+
+class AudioChannel(Tag):
+    """AudioChannel tag representation"""
+
+    @cached_property
+    def iso_code(self) -> Optional[str]:
+        return self.get_attr("ISOCode")
+
+    @cached_property
+    def bit_stream_mode(self) -> Optional[int]:
+        return get_int_value(self.get_attr("BitStreamMode"))
+
+    @cached_property
+    def num_channels(self) -> Optional[int]:
+        return get_int_value(self.get_attr("NumChannels"))
+
+    @cached_property
+    def full_srvc_audio(self) -> Optional[bool]:
+        return get_bool_value(self.get_attr("FullSrvcAudio"))
+
+    @cached_property
+    def component_tag(self) -> Optional[int]:
+        return get_int_value(self.get_attr("componentTag"))
+
+
+class AudioDescriptor(Tag):
+    """AudioDescriptor tag representation"""
+
+    @cached_property
+    def audio_channels(self) -> List[AudioChannel]:
+        return [
+            AudioChannel(channel)
+            for channel in self.element.xpath(
+                LOOKUP_STR_FORMAT.format(target="AudioChannel")
+            )
+        ]
+
+
+class PrivateDescriptor(Tag):
+    """PrivateDescriptor tag representation"""
+
+    @cached_property
+    def descriptor_tag(self) -> Optional[int]:
+        return get_int_value(self.get_attr("descriptorTag"))
+
+    @cached_property
+    def identifier(self) -> Optional[int]:
+        return get_int_value(self.get_attr("identifier"))
+
+    @cached_property
+    def private_bytes(self) -> Optional[str]:
+        return self.get_attr("PrivateBytes")
+
+
+class PrivateCommand(Tag):
+    """PrivateCommand tag representation"""
+
+    @cached_property
+    def identifier(self) -> Optional[int]:
+        return get_int_value(self.get_attr("identifier"))
+
+    @cached_property
+    def private_bytes(self) -> Optional[str]:
+        return self.get_attr("PrivateBytes")
+
+
+class BandwidthReservation(Tag):
+    """BandwidthReservation tag representation"""
+
+    pass
+
+
+class SpliceScheduleEvent(Tag):
+    """SpliceScheduleEvent tag representation"""
+
+    @cached_property
+    def splice_event_id(self) -> Optional[int]:
+        return get_int_value(self.get_attr("spliceEventId"))
+
+    @cached_property
+    def splice_event_cancel_indicator(self) -> Optional[bool]:
+        return get_bool_value(self.get_attr("spliceEventCancelIndicator"))
+
+    @cached_property
+    def out_of_network_indicator(self) -> Optional[bool]:
+        return get_bool_value(self.get_attr("outOfNetworkIndicator"))
+
+    @cached_property
+    def unique_program_id(self) -> Optional[int]:
+        return get_int_value(self.get_attr("uniqueProgramId"))
+
+    @cached_property
+    def avail_num(self) -> Optional[int]:
+        return get_int_value(self.get_attr("availNum"))
+
+    @cached_property
+    def avails_expected(self) -> Optional[int]:
+        return get_int_value(self.get_attr("availsExpected"))
+
+    @cached_property
+    def program(self) -> Optional[TimeSignal]:
+        return self.cast_single_child("Program", TimeSignal)
+
+    @cached_property
+    def break_duration(self) -> Optional[BreakDuration]:
+        return self.cast_single_child("BreakDuration", BreakDuration)
+
+
+class SpliceSchedule(Tag):
+    """SpliceSchedule tag representation"""
+
+    @cached_property
+    def events(self) -> List[SpliceScheduleEvent]:
+        return [
+            SpliceScheduleEvent(event)
+            for event in self.element.xpath(LOOKUP_STR_FORMAT.format(target="Event"))
+        ]
+
+
+class SpliceNull(Tag):
+    """SpliceNull tag representation"""
+
+    pass
+
+
+class EncryptedPacket(Tag):
+    """EncryptedPacket tag representation"""
+
+    @cached_property
+    def encryption_algorithm(self) -> Optional[int]:
+        return get_int_value(self.get_attr("encryptionAlgorithm"))
+
+    @cached_property
+    def cw_index(self) -> Optional[int]:
+        return get_int_value(self.get_attr("cwIndex"))
+
+    @cached_property
+    def ext(self) -> Optional[Ext]:
+        return self.cast_single_child("Ext", Ext)
+
+
 class SpliceInfoSection(Tag):
     """SpliceInfoSection tag representation"""
 
@@ -234,11 +422,76 @@ class SpliceInfoSection(Tag):
         return self.cast_single_child("TimeSignal", TimeSignal)
 
     @cached_property
-    def segmentation_descriptors(self) -> list[SegmentationDescriptor]:
+    def splice_null(self) -> Optional[SpliceNull]:
+        return self.cast_single_child("SpliceNull", SpliceNull)
+
+    @cached_property
+    def splice_schedule(self) -> Optional[SpliceSchedule]:
+        return self.cast_single_child("SpliceSchedule", SpliceSchedule)
+
+    @cached_property
+    def bandwidth_reservation(self) -> Optional[BandwidthReservation]:
+        return self.cast_single_child("BandwidthReservation", BandwidthReservation)
+
+    @cached_property
+    def private_command(self) -> Optional[PrivateCommand]:
+        return self.cast_single_child("PrivateCommand", PrivateCommand)
+
+    @cached_property
+    def encrypted_packet(self) -> Optional[EncryptedPacket]:
+        return self.cast_single_child("EncryptedPacket", EncryptedPacket)
+
+    @cached_property
+    def segmentation_descriptors(self) -> List[SegmentationDescriptor]:
         return [
-            SegmentationDescriptor(member)
-            for member in self.element.xpath(
+            SegmentationDescriptor(desc)
+            for desc in self.element.xpath(
                 LOOKUP_STR_FORMAT.format(target="SegmentationDescriptor")
+            )
+        ]
+
+    @cached_property
+    def avail_descriptors(self) -> List[AvailDescriptor]:
+        return [
+            AvailDescriptor(desc)
+            for desc in self.element.xpath(
+                LOOKUP_STR_FORMAT.format(target="AvailDescriptor")
+            )
+        ]
+
+    @cached_property
+    def dtmf_descriptors(self) -> List[DTMFDescriptor]:
+        return [
+            DTMFDescriptor(desc)
+            for desc in self.element.xpath(
+                LOOKUP_STR_FORMAT.format(target="DTMFDescriptor")
+            )
+        ]
+
+    @cached_property
+    def time_descriptors(self) -> List[TimeDescriptor]:
+        return [
+            TimeDescriptor(desc)
+            for desc in self.element.xpath(
+                LOOKUP_STR_FORMAT.format(target="TimeDescriptor")
+            )
+        ]
+
+    @cached_property
+    def audio_descriptors(self) -> List[AudioDescriptor]:
+        return [
+            AudioDescriptor(desc)
+            for desc in self.element.xpath(
+                LOOKUP_STR_FORMAT.format(target="AudioDescriptor")
+            )
+        ]
+
+    @cached_property
+    def private_descriptors(self) -> List[PrivateDescriptor]:
+        return [
+            PrivateDescriptor(desc)
+            for desc in self.element.xpath(
+                LOOKUP_STR_FORMAT.format(target="PrivateDescriptor")
             )
         ]
 
