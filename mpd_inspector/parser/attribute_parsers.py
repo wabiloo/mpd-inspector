@@ -2,10 +2,11 @@
 Module for utility functions
 """
 
-from datetime import datetime, timedelta
 import math
 import re
-from typing import Optional, Type, Dict, List
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Type
+
 import isodate
 
 
@@ -58,7 +59,9 @@ def get_list_of_type(target_type: Type, attribute_value: str) -> List[str]:
 
 def get_datetime_value(value: str) -> Optional[datetime]:
     """Helper to return a datetime from str"""
-    return value if value is None else isodate.parse_datetime(value)
+    if value is None:
+        return None
+    return isodate.parse_datetime(value)
 
 
 def get_duration_value(value: str) -> Optional[timedelta]:

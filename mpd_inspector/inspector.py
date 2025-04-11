@@ -1,7 +1,7 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import cached_property
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin
 
 from lxml import etree
@@ -15,23 +15,35 @@ from mpd_inspector.parser.enums import (
     PresentationType,
     TemplateVariable,
 )
+from mpd_inspector.provenance import ValueProvenance
 from mpd_inspector.scte35.scte35_enums import SpliceCommandType
-
-from .value_statements import DefaultValue, DerivedValue, ExplicitValue, InheritedValue
 
 
 class BaseInspector:
     def __init__(self, **kwargs):
         self._kwargs = kwargs
         self._tag = None
+        self._value_provenances: Dict[str, ValueProvenance] = {}
 
     def __getattr__(self, name):
         """Defers calls to unknown properties or methods to the tag"""
         return getattr(self._tag, name)
 
+    def set_value_provenance(self, name: str, provenance: ValueProvenance) -> None:
+        """Sets the provenance of a value."""
+        self._value_provenances[name] = provenance
+
+    def get_value_provenance(self, name: str) -> Optional[ValueProvenance]:
+        """Gets the provenance of a value if it exists."""
+        # First we access the property to make sure it's calculated
+        getattr(self, name)
+
+        return self._value_provenances.get(name)
+
 
 class MPDInspector(BaseInspector):
     def __init__(self, mpd: mpd_tags.MPD):
+        super().__init__()
         self._tag = mpd
         self._base_uri = ""
 
@@ -69,9 +81,15 @@ class MPDInspector(BaseInspector):
         # Calculation logic
         orig_value = self._tag.availability_start_time
         if orig_value:
-            return ExplicitValue(orig_value)
+            self.set_value_provenance(
+                "availability_start_time", ValueProvenance.EXPLICIT
+            )
+            return orig_value
         else:
-            return DefaultValue(datetime.datetime.fromtimestamp(0.0))
+            self.set_value_provenance(
+                "availability_start_time", ValueProvenance.DEFAULT
+            )
+            return datetime.fromtimestamp(0.0, tz=timezone.utc)
 
     @cached_property
     def full_urls(self):
@@ -85,6 +103,7 @@ class MPDInspector(BaseInspector):
 
 class PeriodInspector(BaseInspector):
     def __init__(self, mpd_inspector: MPDInspector, period: mpd_tags.Period):
+        super().__init__()
         self._mpd_inspector = mpd_inspector
         self._tag = period
 
@@ -134,43 +153,52 @@ class PeriodInspector(BaseInspector):
             return PeriodType.EARLY_TERMINATED
 
     @cached_property
-    def start_time(self) -> datetime:
+    def start_time(self) -> datetime | timedelta:
         """Returns the clock time for the start of the period, calculating it from other periods if necessary"""
         if self._tag.start is not None:
-            start_offset = ExplicitValue(self._tag.start)
+            self.set_value_provenance("start_time", ValueProvenance.EXPLICIT)
+            start_offset = self._tag.start
         else:
             # TODO - implement all other possible cases
             # pure VOD (static manifest), first period starts at 0
             if self.index == 0 and self._mpd_inspector.type == PresentationType.STATIC:
-                start_offset = DefaultValue(timedelta(seconds=0))
+                self.set_value_provenance("start_time", ValueProvenance.DEFAULT)
+                start_offset = timedelta(seconds=0)
 
             # later periods for static and dynamic manifests
             if (
                 self.index > 0
                 and self._mpd_inspector._tag.periods[self.index - 1].duration
             ):
-                start_offset = DerivedValue(
+                self.set_value_provenance("start_time", ValueProvenance.DERIVED)
+                start_offset = (
                     self._mpd_inspector.periods[self.index - 1].start_time
                     + self._mpd_inspector.periods[self.index - 1].duration
                 )
 
-        # Add it to the availabilityStartTime
-        if self._mpd_inspector.availability_start_time:
-            return DerivedValue(
-                self._mpd_inspector.availability_start_time + start_offset
-            )
+        # For VOD manifests, return timedelta
+        if self._mpd_inspector.type == PresentationType.STATIC:
+            return start_offset
+        # For live manifests, add to availabilityStartTime
+        elif self._mpd_inspector.availability_start_time:
+            # Only set the provenance to DERIVED if it wasn't already set
+            if "start_time" not in self._value_provenances:
+                self.set_value_provenance("start_time", ValueProvenance.DERIVED)
+            return self._mpd_inspector.availability_start_time + start_offset
         else:
             return start_offset
 
     @cached_property
     def duration(self) -> timedelta:
         if self._tag.duration:
-            return ExplicitValue(self._tag.duration)
+            self.set_value_provenance("duration", ValueProvenance.EXPLICIT)
+            return self._tag.duration
         else:
             # TODO - implement all other possible cases
             #  - Last period, use the mediaPresentationDuration (for VOD), or calculate from segments
             if self.index < len(self._mpd_inspector._tag.periods) - 1:
-                return DerivedValue(
+                self.set_value_provenance("duration", ValueProvenance.DERIVED)
+                return (
                     self._mpd_inspector.periods[self.index + 1].start_time
                     - self.start_time
                 )
@@ -178,14 +206,14 @@ class PeriodInspector(BaseInspector):
             if self._mpd_inspector.type == PresentationType.STATIC:
                 # Single Period
                 if len(self._mpd_inspector._tag.periods) == 1:
-                    return DerivedValue(
-                        self._mpd_inspector._tag.media_presentation_duration
-                    )
+                    self.set_value_provenance("duration", ValueProvenance.DERIVED)
+                    return self._mpd_inspector._tag.media_presentation_duration
 
     @cached_property
     def end_time(self) -> datetime:
         if self.duration:
-            return DerivedValue(self.start_time + self.duration)
+            self.set_value_provenance("end_time", ValueProvenance.DERIVED)
+            return self.start_time + self.duration
         else:
             return None
 
@@ -205,6 +233,7 @@ class AdaptationSetInspector(BaseInspector):
     def __init__(
         self, period_inspector: PeriodInspector, adaptation_set: mpd_tags.AdaptationSet
     ):
+        super().__init__()
         self._period_inspector = period_inspector
         self._mpd_inspector = period_inspector._mpd_inspector
         self._tag = adaptation_set
@@ -246,6 +275,7 @@ class RepresentationInspector(BaseInspector):
         adaptation_set_inspector: AdaptationSetInspector,
         representation: mpd_tags.Representation,
     ):
+        super().__init__()
         self._adaptation_set_inspector = adaptation_set_inspector
         self._period_inspector = adaptation_set_inspector._period_inspector
         self._mpd_inspector = adaptation_set_inspector._mpd_inspector
@@ -284,20 +314,25 @@ class RepresentationInspector(BaseInspector):
     @cached_property
     def width(self):
         if self._tag.width:
-            return ExplicitValue(self._tag.width)
+            self.set_value_provenance("width", ValueProvenance.EXPLICIT)
+            return self._tag.width
         else:
-            return InheritedValue(self._adaptation_set_inspector.width)
+            self.set_value_provenance("width", ValueProvenance.INHERITED)
+            return self._adaptation_set_inspector.width
 
     @cached_property
     def height(self):
         if self._tag.height:
-            return ExplicitValue(self._tag.height)
+            self.set_value_provenance("height", ValueProvenance.EXPLICIT)
+            return self._tag.height
         else:
-            return InheritedValue(self._adaptation_set_inspector.height)
+            self.set_value_provenance("height", ValueProvenance.INHERITED)
+            return self._adaptation_set_inspector.height
 
 
 class SegmentInformationInspector(BaseInspector):
     def __init__(self, representation_inspector: RepresentationInspector):
+        super().__init__()
         self._representation_inspector = representation_inspector
         self._adaptation_set_inspector = (
             representation_inspector._adaptation_set_inspector
@@ -313,49 +348,55 @@ class SegmentInformationInspector(BaseInspector):
 
         # On the current node
         if self._representation_inspector.segment_template:
-            return ExplicitValue(self._representation_inspector.segment_template)
+            self.set_value_provenance("tag", ValueProvenance.EXPLICIT)
+            return self._representation_inspector.segment_template
         elif self._representation_inspector.segment_list:
-            return ExplicitValue(self._representation_inspector.segment_list)
+            self.set_value_provenance("tag", ValueProvenance.EXPLICIT)
+            return self._representation_inspector.segment_list
         elif self._representation_inspector.segment_base:
-            return ExplicitValue(self._representation_inspector.segment_base)
+            self.set_value_provenance("tag", ValueProvenance.EXPLICIT)
+            return self._representation_inspector.segment_base
 
         # Or on the parent adaptation set node
         if self._adaptation_set_inspector.segment_template:
-            return InheritedValue(self._adaptation_set_inspector.segment_template)
+            self.set_value_provenance("tag", ValueProvenance.INHERITED)
+            return self._adaptation_set_inspector.segment_template
         elif self._adaptation_set_inspector.segment_list:
-            return InheritedValue(self._adaptation_set_inspector.segment_list)
+            self.set_value_provenance("tag", ValueProvenance.INHERITED)
+            return self._adaptation_set_inspector.segment_list
         elif self._adaptation_set_inspector.segment_base:
-            return InheritedValue(self._adaptation_set_inspector.segment_base)
+            self.set_value_provenance("tag", ValueProvenance.INHERITED)
+            return self._adaptation_set_inspector.segment_base
 
         # or even on the period node
         if self._period_inspector.segment_template:
-            return InheritedValue(self._period_inspector.segment_template)
+            self.set_value_provenance("tag", ValueProvenance.INHERITED)
+            return self._period_inspector.segment_template
         elif self._period_inspector.segment_list:
-            return InheritedValue(self._period_inspector.segment_list)
+            self.set_value_provenance("tag", ValueProvenance.INHERITED)
+            return self._period_inspector.segment_list
         elif self._period_inspector.segment_base:
-            return InheritedValue(self._period_inspector.segment_base)
+            self.set_value_provenance("tag", ValueProvenance.INHERITED)
+            return self._period_inspector.segment_base
 
     @cached_property
     def addressing_mode(self):
-        if isinstance(self.tag.value, mpd_tags.SegmentBase):
+        if isinstance(self.tag, mpd_tags.SegmentBase):
             return AddressingMode.INDEXED
         if (
-            isinstance(self.tag.value, mpd_tags.SegmentTemplate)
+            isinstance(self.tag, mpd_tags.SegmentTemplate)
             and not self.tag.segment_timeline
         ):
             return AddressingMode.SIMPLE
-        if (
-            isinstance(self.tag.value, mpd_tags.SegmentTemplate)
-            and self.tag.segment_timeline
-        ):
+        if isinstance(self.tag, mpd_tags.SegmentTemplate) and self.tag.segment_timeline:
             return AddressingMode.EXPLICIT
 
     @cached_property
     def addressing_template(self):
         if self.addressing_mode in [AddressingMode.EXPLICIT, AddressingMode.SIMPLE]:
-            if "$Time" in self.tag.value.media:
+            if "$Time" in self.tag.media:
                 return TemplateVariable.TIME
-            if "$Number" in self.tag.value.media:
+            if "$Number" in self.tag.media:
                 return TemplateVariable.NUMBER
 
     def full_urls(self, attribute_name, replacements: dict = {}):
@@ -365,7 +406,7 @@ class SegmentInformationInspector(BaseInspector):
         }
         all_replacements.update(replacements)
 
-        media_url = getattr(self.tag.value, attribute_name)
+        media_url = getattr(self.tag, attribute_name)
         full_urls = []
         if media_url:
             for representation_url in self._representation_inspector.full_urls:
@@ -400,8 +441,8 @@ class SegmentInformationInspector(BaseInspector):
             raise NotImplementedError("This addressing mode has not been implemented")
 
     def _generate_segments_from_simple_number_addressing(self):
-        segment_number = self.tag.value.start_number
-        segment_duration = self.tag.value.duration / self.tag.value.timescale
+        segment_number = self.tag.start_number
+        segment_duration = self.tag.duration / self.tag.timescale
         total_duration_so_far = 0
         while total_duration_so_far < self._period_inspector.duration.total_seconds():
             total_duration_so_far += segment_duration
@@ -415,7 +456,7 @@ class SegmentInformationInspector(BaseInspector):
             segment_number += 1
 
     def _generate_segments_from_explicit_time_addressing(self):
-        timescale = self.tag.value.timescale
+        timescale = self.tag.timescale
         segment_start = None
         this_segment = None
         for segment in self.tag.segment_timeline.segments:
@@ -443,7 +484,7 @@ class SegmentInformationInspector(BaseInspector):
                     yield this_segment
 
     def _generate_segments_from_explicit_number_addressing(self):
-        timescale = self.tag.value.timescale
+        timescale = self.tag.timescale
         segment_start = None
         segment_number = self.start_number
         this_segment = None

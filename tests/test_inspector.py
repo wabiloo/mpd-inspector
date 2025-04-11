@@ -7,14 +7,20 @@ from datetime import datetime, timedelta, timezone
 import isodate
 from pytest import mark
 
-from mpd_inspector.inspector import (AdaptationSetInspector, MPDInspector,
-                                     PeriodInspector, RepresentationInspector)
-from mpd_inspector.parser.enums import (AddressingMode, PresentationType,
-                                        TemplateVariable)
+from mpd_inspector.inspector import (
+    AdaptationSetInspector,
+    MPDInspector,
+    PeriodInspector,
+    RepresentationInspector,
+)
+from mpd_inspector.parser.enums import (
+    AddressingMode,
+    PresentationType,
+    TemplateVariable,
+)
 from mpd_inspector.parser.mpd_tags import SegmentTemplate, SegmentTimeline
 from mpd_inspector.parser.parser import MPDParser
-from mpd_inspector.value_statements import (DefaultValue, DerivedValue,
-                                            ExplicitValue, InheritedValue)
+from mpd_inspector.provenance import ValueProvenance
 
 
 @mark.parametrize(
@@ -48,7 +54,7 @@ def test_inspect_vod_file(input_file):
     assert repr0.xpath == "//MPD/Period[1]/AdaptationSet[1]/Representation[1]"
 
     segment_info = repr0.segment_information
-    assert isinstance(segment_info.tag, InheritedValue)
+    assert segment_info.get_value_provenance("tag") == ValueProvenance.INHERITED
     assert segment_info.addressing_mode == AddressingMode.SIMPLE
     assert segment_info.addressing_template == TemplateVariable.NUMBER
 
@@ -58,7 +64,6 @@ def test_inspect_vod_file(input_file):
 
     assert segment_list[0].urls == ["../video/180_250000/dash/segment_0.m4s"]
     assert segment_list[-1].urls == ["../video/180_250000/dash/segment_52.m4s"]
-
 
 
 @mark.parametrize(
@@ -74,9 +79,12 @@ def test_inspect_live_manifest(input_file):
     assert inspector.type == PresentationType.DYNAMIC
     assert inspector.is_live() is True
     assert inspector.id == mpd.id
-    assert isinstance(inspector.availability_start_time, ExplicitValue)
     assert inspector.availability_start_time == isodate.parse_datetime(
         "2023-04-11T21:23:16.18Z"
+    )
+    assert (
+        inspector.get_value_provenance("availability_start_time")
+        == ValueProvenance.EXPLICIT
     )
 
     repr0 = inspector.periods[0].adaptation_sets[0].representations[0]
@@ -85,7 +93,7 @@ def test_inspect_live_manifest(input_file):
     assert video_seg_info.addressing_mode == AddressingMode.EXPLICIT
     assert video_seg_info.addressing_template == TemplateVariable.TIME
 
-    assert isinstance(video_seg_info.tag.value, SegmentTemplate)
+    assert isinstance(video_seg_info.tag, SegmentTemplate)
 
     video_segment_generator = video_seg_info.segments
     segment_list = list(video_segment_generator)
@@ -98,7 +106,6 @@ def test_inspect_live_manifest(input_file):
     segment_list = list(audio_segment_generator)
     assert len(segment_list) == 30
     assert segment_list[0].urls == ["index_audio_8_0_1997321287936.mp4?m=1678459069"]
-
 
 
 @mark.parametrize(
@@ -116,7 +123,10 @@ def test_inspect_live_manifest_multiperiod(input_file):
 
     assert inspector.id == mpd.id
     assert inspector.unparsed_attr("availabilityStartTime") == "1970-01-01T00:00:00Z"
-    assert isinstance(inspector.availability_start_time, ExplicitValue)
+    assert (
+        inspector.get_value_provenance("availability_start_time")
+        == ValueProvenance.EXPLICIT
+    )
     assert inspector.availability_start_time == datetime.fromtimestamp(
         0, tz=timezone.utc
     )
@@ -127,8 +137,10 @@ def test_inspect_live_manifest_multiperiod(input_file):
     assert inspector.periods[0].start_time == datetime.fromisoformat(
         "2024-08-05 12:19:29.74700Z"
     )
-    assert isinstance(inspector.periods[0].duration, DerivedValue)
-    assert inspector.periods[0].duration.value == timedelta(seconds=181.917)
+    assert (
+        inspector.periods[0].get_value_provenance("duration") == ValueProvenance.DERIVED
+    )
+    assert inspector.periods[0].duration == timedelta(seconds=181.917)
 
     assert inspector.periods[1].sequence == 2
     assert inspector.periods[1].start_time == datetime.fromisoformat(
@@ -157,22 +169,36 @@ def test_inspect_vod_manifest_multiperiod(input_file):
 
     assert inspector.id == mpd.id
     assert inspector.unparsed_attr("availabilityStartTime") is None
-    assert inspector.availability_start_time is None
+    assert inspector.availability_start_time == datetime.fromtimestamp(
+        0.0, tz=timezone.utc
+    )
     assert len(inspector.periods) == 4
 
     assert inspector.periods[0].index == 0
     assert inspector.periods[0].sequence == 1
-    assert isinstance(inspector.periods[0].start_time, DefaultValue)
+    assert (
+        inspector.periods[0].get_value_provenance("start_time")
+        == ValueProvenance.DEFAULT
+    )
     assert inspector.periods[0].start_time == timedelta(seconds=0.0)
-    assert isinstance(inspector.periods[0].duration, ExplicitValue)
-    assert inspector.periods[0].duration.value == timedelta(seconds=30.04)
+    assert (
+        inspector.periods[0].get_value_provenance("duration")
+        == ValueProvenance.EXPLICIT
+    )
+    assert inspector.periods[0].duration == timedelta(seconds=30.04)
     assert inspector.periods[0].end_time == timedelta(seconds=30.04)
 
     assert inspector.periods[1].sequence == 2
-    assert isinstance(inspector.periods[1].start_time, DerivedValue)
+    assert (
+        inspector.periods[1].get_value_provenance("start_time")
+        == ValueProvenance.DERIVED
+    )
     assert inspector.periods[1].start_time == timedelta(seconds=30.04)
-    assert isinstance(inspector.periods[1].duration, ExplicitValue)
-    assert inspector.periods[1].duration.value == timedelta(seconds=30)
+    assert (
+        inspector.periods[1].get_value_provenance("duration")
+        == ValueProvenance.EXPLICIT
+    )
+    assert inspector.periods[1].duration == timedelta(seconds=30)
     assert inspector.periods[1].end_time == timedelta(seconds=60.04)
-    assert inspector.periods[1].duration.value == timedelta(seconds=30)
+    assert inspector.periods[1].duration == timedelta(seconds=30)
     assert inspector.periods[1].end_time == timedelta(seconds=60.04)
