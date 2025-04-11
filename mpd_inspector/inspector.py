@@ -15,7 +15,7 @@ from mpd_inspector.parser.enums import (
     PresentationType,
     TemplateVariable,
 )
-from mpd_inspector.parser.scte35_enums import SpliceCommandType
+from mpd_inspector.scte35.scte35_enums import SpliceCommandType
 
 from .value_statements import DefaultValue, DerivedValue, ExplicitValue, InheritedValue
 
@@ -613,12 +613,28 @@ class Scte35BinaryEventInspector(Scte35EventInspector):
 class Scte35XmlEventInspector(Scte35EventInspector):
     @cached_property
     def content(self):
-        # TODO (maybe) - parse the content into a Cue object
-        return self._tag.content[0]
+        """Return the parsed SpliceInfoSection from the event content"""
+        from mpd_inspector.scte35 import SCTE35Parser
+
+        return SCTE35Parser.from_event_tag(self._tag)
 
     @cached_property
     def command_type(self):
-        return SpliceCommandType(self.content.command.command_type)
+        """Return the command type from the parsed SpliceInfoSection"""
+        if self.content.splice_insert is not None:
+            return SpliceCommandType.SPLICE_INSERT
+        elif self.content.time_signal is not None:
+            return SpliceCommandType.TIME_SIGNAL
+        elif self.content.splice_null is not None:
+            return SpliceCommandType.SPLICE_NULL
+        elif self.content.bandwidth_reservation is not None:
+            return SpliceCommandType.BANDWIDTH_RESERVATION
+        elif self.content.private_command is not None:
+            return SpliceCommandType.PRIVATE
+        elif self.content.splice_schedule is not None:
+            return SpliceCommandType.SPLICE_SCHEDULE
+        else:
+            return None
 
 
 def change_namespace(element, new_namespace):

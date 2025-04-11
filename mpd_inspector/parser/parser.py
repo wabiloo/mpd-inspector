@@ -9,6 +9,7 @@ from lxml import etree
 
 from .exceptions import UnicodeDeclaredError, UnknownElementTreeParseError
 from .mpd_tags import MPD
+from ..scte35.scte35_tags import SpliceInfoSection
 
 ENCODING_PATTERN = r"<\?.*?\s(encoding=[\"\']\S*[\"\']).*\?>"
 
@@ -103,3 +104,73 @@ class MPDParser:
         """
         return etree.tostring(mpd.element).decode("utf-8")
 
+
+class SCTE35Parser:
+    """
+    Parser class for SCTE35 XML information.
+    Can parse SCTE35 XML from:
+    1. string - using the from_string method
+    2. file - using the from_file method
+    3. url - using the from_url method
+    """
+
+    @classmethod
+    def from_string(cls, scte35_xml: str) -> SpliceInfoSection:
+        """Generate a parsed SCTE35 object from a given string
+
+        Args:
+            scte35_xml (str): string representation of SCTE35 XML
+
+        Returns:
+            SpliceInfoSection: an object representing the SCTE35 information
+        """
+        try:
+            root = etree.fromstring(scte35_xml)
+        except Exception as err:
+            raise UnknownElementTreeParseError() from err
+        return SpliceInfoSection(root)
+
+    @classmethod
+    def from_file(cls, file_name: str) -> SpliceInfoSection:
+        """Generate a parsed SCTE35 object from a given file
+
+        Args:
+            file_name (str): path to the SCTE35 XML file
+
+        Returns:
+            SpliceInfoSection: an object representing the SCTE35 information
+        """
+        try:
+            tree = etree.parse(file_name)
+        except Exception as err:
+            raise UnknownElementTreeParseError() from err
+        return SpliceInfoSection(tree.getroot())
+
+    @classmethod
+    def from_url(cls, url: str) -> SpliceInfoSection:
+        """Generate a parsed SCTE35 object from a given URL
+
+        Args:
+            url (str): URL of the SCTE35 XML file
+
+        Returns:
+            SpliceInfoSection: an object representing the SCTE35 information
+        """
+        try:
+            with urlopen(url) as scte35_file:
+                tree = etree.parse(scte35_file)
+        except Exception as err:
+            raise UnknownElementTreeParseError() from err
+        return SpliceInfoSection(tree.getroot())
+
+    @classmethod
+    def to_string(cls, scte35: SpliceInfoSection) -> str:
+        """Generate a string XML from a given SCTE35 object
+
+        Args:
+            scte35 (SpliceInfoSection): SCTE35 object to convert to string
+
+        Returns:
+            str: string representation of the SCTE35 object
+        """
+        return etree.tostring(scte35.element).decode("utf-8")
