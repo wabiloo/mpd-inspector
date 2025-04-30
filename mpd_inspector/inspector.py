@@ -533,6 +533,7 @@ class SegmentInformationInspector(BaseInspector):
             start_time=segment_start_time,
             duration=duration_in_s,
             number=number,
+            time=start,
             urls=self.full_urls("media", {"$Number": number, "$Time": start}),
             init_urls=self.full_urls("initialization", {}),
             duration_cumulative=cumul_duration,
@@ -546,6 +547,7 @@ class MediaSegment:
         duration: float,
         init_urls: List[str] = [],
         number: Optional[int] = None,
+        time: Optional[int] = None,
         start_time: Optional[datetime | float] = None,
         duration_cumulative: Optional[
             float
@@ -555,6 +557,7 @@ class MediaSegment:
         self.init_urls = init_urls
         self.duration = duration
         self.number = number
+        self.time = time
         if isinstance(start_time, float):
             self.start_time = datetime.fromtimestamp(start_time)
         else:
