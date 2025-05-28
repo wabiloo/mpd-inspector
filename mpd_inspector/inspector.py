@@ -299,6 +299,31 @@ class PeriodInspector(BaseInspector):
                 for period_base_url in self._tag.base_urls
             ]
 
+    def select_adaptation_sets(self, selector: int | str | range | None = None):
+        if selector is None:
+            return self.adaptation_sets
+
+        selected = []
+        for adaptation_set in self.adaptation_sets:
+            mime_type_matches = (
+                adaptation_set.mime_type is not None
+                and selector in adaptation_set.mime_type
+            )
+            content_type_matches = (
+                adaptation_set.content_type is not None
+                and selector in adaptation_set.content_type
+            )
+            id_matches = (
+                adaptation_set.id is not None
+                and selector.isdigit()
+                and int(selector) == adaptation_set.index
+            )
+
+            if mime_type_matches or content_type_matches or id_matches:
+                selected.append(adaptation_set)
+
+        return selected
+
 
 class AdaptationSetInspector(BaseInspector):
     def __init__(
