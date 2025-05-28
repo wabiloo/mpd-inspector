@@ -364,6 +364,33 @@ class AdaptationSetInspector(BaseInspector):
                 for adapt_base_url in self._tag.base_urls
             ]
 
+    def select_representations(self, selector: int | str | range | None = None):
+        if selector is None:
+            return self.representations
+
+        try:
+            index = cast_to_index(selector, one_based=True)
+            return [self.representations[index]]
+        except ValueError:
+            pass
+
+        try:
+            range_selector = cast_to_range(
+                selector, one_based=True, array_size=len(self.representations)
+            )
+            return [
+                representation
+                for representation in self.representations
+                if representation.index
+                in range(range_selector.start, range_selector.stop)
+            ]
+        except ValueError:
+            pass
+
+        # TODO - allow selectors by property, such as width, height, etc.
+
+        raise ValueError(f"Invalid selector for representations: {selector}")
+
 
 class RepresentationInspector(BaseInspector):
     def __init__(
