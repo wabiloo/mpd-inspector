@@ -123,7 +123,9 @@ class MPDInspector(BaseInspector):
         # if the selector is a range, return the periods in that range
 
         try:
-            range_selector = cast_to_range(selector, one_based=True, array_size=len(self.periods))
+            range_selector = cast_to_range(
+                selector, one_based=True, array_size=len(self.periods)
+            )
             return [
                 period
                 for period in self.periods
@@ -153,7 +155,7 @@ class MPDInspector(BaseInspector):
                 )
                 if not period_start:
                     raise ValueError(f"Period {start} not found")
-            
+
             if stop == "":
                 period_stop = self.periods[-1]
             else:
@@ -162,14 +164,14 @@ class MPDInspector(BaseInspector):
                 )
                 if not period_stop:
                     raise ValueError(f"Period {stop} not found")
-                
+
             return [
                 period
                 for period in self.periods
                 if period.index in range(period_start.index, period_stop.index + 1)
             ]
 
-        raise ValueError(f"Invalid selector: {selector}")
+        raise ValueError(f"Invalid selector for periods: {selector}")
 
 
 class PeriodInspector(BaseInspector):
