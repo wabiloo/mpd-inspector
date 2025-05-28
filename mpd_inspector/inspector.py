@@ -17,6 +17,7 @@ from mpd_inspector.parser.enums import (
 )
 from mpd_inspector.provenance import ValueProvenance
 from mpd_inspector.scte35.scte35_enums import SpliceCommandType
+from mpd_inspector.utils import cast_to_index, cast_to_range
 
 
 class BaseInspector:
@@ -99,6 +100,76 @@ class MPDInspector(BaseInspector):
                 for base_url in self._tag.base_urls
             ]
         return [self.base_uri]
+
+    def select_periods(self, selector: int | str | range | None = None):
+        """
+        Selects the periods from the MPD based on the selector.
+        The selector can be:
+        - an integer, in which case it returns the period at that index
+        - a range, in which case it returns the periods in that range
+        - a string, in which case it returns the period with that id
+        - a string with a colon, in which case it returns the periods in the range specified by the colon (positions or ids)
+        """
+        if selector is None:
+            return self.periods
+
+        # if the selector is an integer, return the period at that index
+        try:
+            index = cast_to_index(selector, one_based=True)
+            return [self.periods[index]]
+        except ValueError:
+            pass
+
+        # if the selector is a range, return the periods in that range
+
+        try:
+            range_selector = cast_to_range(selector, one_based=True, array_size=len(self.periods))
+            return [
+                period
+                for period in self.periods
+                if period.index in range(range_selector.start, range_selector.stop)
+            ]
+        except ValueError:
+            pass
+
+        # then it's a string using period ids
+        if ":" not in selector:
+            # Then it's the id of the period
+            period = next(
+                (period for period in self.periods if period.id == selector), None
+            )
+            if period:
+                return [period]
+            else:
+                raise ValueError(f"Period with id '{selector}' not found")
+        else:
+            # Then it's a range of periods
+            start, stop = selector.split(":")
+            if start == "":
+                period_start = self.periods[0]
+            else:
+                period_start = next(
+                    (period for period in self.periods if period.id == start), None
+                )
+                if not period_start:
+                    raise ValueError(f"Period {start} not found")
+            
+            if stop == "":
+                period_stop = self.periods[-1]
+            else:
+                period_stop = next(
+                    (period for period in self.periods if period.id == stop), None
+                )
+                if not period_stop:
+                    raise ValueError(f"Period {stop} not found")
+                
+            return [
+                period
+                for period in self.periods
+                if period.index in range(period_start.index, period_stop.index + 1)
+            ]
+
+        raise ValueError(f"Invalid selector: {selector}")
 
 
 class PeriodInspector(BaseInspector):
