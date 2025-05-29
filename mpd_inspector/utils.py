@@ -7,7 +7,7 @@ def cast_to_index(value, one_based=False) -> int:
 
 def cast_to_range(value, one_based=False, array_size=None) -> range | None:
     if ":" not in value:
-        return value
+        raise ValueError(f"Not a range expression: {value}")
     else:
         start, end = value.split(":")
         # allowing for empty start and end (e.g. ':10' and '10:')
