@@ -11,6 +11,7 @@ import mpd_inspector.namespaces as ns
 import mpd_inspector.parser.mpd_tags as mpd_tags
 from mpd_inspector.parser.enums import (
     AddressingMode,
+    ContentType,
     PeriodType,
     PresentationType,
     TemplateVariable,
@@ -305,15 +306,17 @@ class PeriodInspector(BaseInspector):
         if selector is None:
             return self.adaptation_sets
 
+        # TODO - allow combination of selectors, eg. "video:0" = index 0 of adaptation sets with mimetype or content_type video
+
         selected = []
         for adaptation_set in self.adaptation_sets:
-            mime_type_matches = (
-                adaptation_set.mime_type is not None
-                and selector in adaptation_set.mime_type
-            )
             content_type_matches = (
                 adaptation_set.content_type is not None
-                and selector in adaptation_set.content_type
+                and selector in adaptation_set.content_type.value  # content_type is a ContentType enum
+            )
+            mime_type_matches = (
+                adaptation_set.mime_type is not None
+                and selector in adaptation_set.mime_type  # partial match of the mimetype string
             )
             id_matches = (
                 adaptation_set.id is not None
@@ -321,7 +324,7 @@ class PeriodInspector(BaseInspector):
                 and int(selector) == adaptation_set.index
             )
 
-            if mime_type_matches or content_type_matches or id_matches:
+            if content_type_matches or mime_type_matches or id_matches:
                 selected.append(adaptation_set)
 
         return selected
@@ -407,6 +410,10 @@ class RepresentationInspector(BaseInspector):
         self._tag = representation
 
     @cached_property
+    def adaptation_set(self):
+        return self._adaptation_set_inspector
+
+    @cached_property
     def index(self) -> int:
         """Return the index of the period in the MPD"""
         return self._adaptation_set_inspector._tag.representations.index(self._tag)
@@ -453,6 +460,33 @@ class RepresentationInspector(BaseInspector):
         else:
             self.set_value_provenance("height", ValueProvenance.INHERITED)
             return self._adaptation_set_inspector.height
+
+    @cached_property
+    def mime_type(self):
+        if self._tag.mime_type:
+            self.set_value_provenance("mime_type", ValueProvenance.EXPLICIT)
+            return self._tag.mime_type
+        else:
+            self.set_value_provenance("mime_type", ValueProvenance.INHERITED)
+            return self._adaptation_set_inspector.mime_type
+
+    @cached_property
+    def content_type(self):
+        # This is not a property of the Representation tag, but it is inherited from the AdaptationSet
+        # and is used as a shortcut to determine the type of the content
+        if self._adaptation_set_inspector.content_type is not None:
+            self.set_value_provenance("content_type", ValueProvenance.EXPLICIT)
+            return self._adaptation_set_inspector.content_type
+        else:
+            # but if not available, we can infer it from the mime_type
+            if self._tag.mime_type.startswith("video/"):
+                return ContentType.VIDEO
+            elif self._tag.mime_type.startswith("audio/"):
+                return ContentType.AUDIO
+            elif self._tag.mime_type.startswith("image/"):
+                return ContentType.IMAGE
+            else:
+                return ContentType.UNSPECIFIED
 
 
 class SegmentInformationInspector(BaseInspector):

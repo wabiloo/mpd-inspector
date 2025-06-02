@@ -4,21 +4,22 @@
 The tags module holds all the type of different nodes
 you may come across when parsing MPD manifest file.
 """
+
 from functools import cached_property
-from typing import Optional, Any
+from typing import Any, Optional
 
 from lxml.etree import Element
 
-from .enums import PresentationType
 from .attribute_parsers import (
-    organize_ns,
-    get_float_value,
     get_bool_value,
-    get_int_value,
-    get_list_of_type,
     get_datetime_value,
     get_duration_value,
+    get_float_value,
+    get_int_value,
+    get_list_of_type,
+    organize_ns,
 )
+from .enums import ContentType, PresentationType
 
 LOOKUP_STR_FORMAT = './*[local-name(.) = "{target}"]'
 KEYS_NOT_FOR_SETTING = ["element", "tag_map", "encoding"]
@@ -259,7 +260,7 @@ class RepresentationBase(Tag):  # pylint: disable=too-many-public-methods
 
 
 class ContentComponent(Tag):
-    """Content Compoenet tag representation"""
+    """Content Component tag representation"""
 
     @cached_property
     def id(self):
@@ -271,7 +272,7 @@ class ContentComponent(Tag):
 
     @cached_property
     def content_type(self):
-        return self.element.attrib.get("contentType")
+        return ContentType(self.element.attrib.get("contentType"))
 
     @cached_property
     def par(self):
@@ -414,7 +415,7 @@ class AdaptationSet(RepresentationBase):  # pylint: disable=too-many-public-meth
 
     @cached_property
     def content_type(self):
-        return self.element.attrib.get("contentType")
+        return ContentType(self.element.attrib.get("contentType"))
 
     @cached_property
     def par(self):
@@ -773,7 +774,6 @@ class SegmentList(Tag, MultipleSegmentBaseInformationMixin):
 
 
 class SegmentTemplate(Tag, MultipleSegmentBaseInformationMixin):
-
     @cached_property
     def media(self):
         return self.element.attrib.get("media")

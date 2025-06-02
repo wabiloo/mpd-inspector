@@ -22,3 +22,21 @@ class AddressingMode(enum.Enum):
 class TemplateVariable(enum.Enum):
     NUMBER = "$Number$"
     TIME = "$Time$"
+
+
+class ContentType(enum.Enum):
+    TEXT = "text"
+    IMAGE = "image"
+    AUDIO = "audio"
+    VIDEO = "video"
+    APPLICATION = "application"
+    FONT = "font"
+    UNSPECIFIED = "unspecified"
+
+    @classmethod
+    def _missing_(cls, value):
+        if value is None:
+            return None
+        return super()._missing_(
+            value
+        )  # Still raise ValueError for other invalid values
