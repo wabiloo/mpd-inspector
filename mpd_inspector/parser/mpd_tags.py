@@ -272,7 +272,10 @@ class ContentComponent(Tag):
 
     @cached_property
     def content_type(self):
-        return ContentType(self.element.attrib.get("contentType"))
+        if ct := self.element.attrib.get("contentType"):
+            return ContentType(ct)
+        else:
+            return None
 
     @cached_property
     def par(self):
@@ -415,7 +418,10 @@ class AdaptationSet(RepresentationBase):  # pylint: disable=too-many-public-meth
 
     @cached_property
     def content_type(self):
-        return ContentType(self.element.attrib.get("contentType"))
+        if ct := self.element.attrib.get("contentType"):
+            return ContentType(ct)
+        else:
+            return None
 
     @cached_property
     def par(self):

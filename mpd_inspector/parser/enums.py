@@ -32,11 +32,18 @@ class ContentType(enum.Enum):
     APPLICATION = "application"
     FONT = "font"
     UNSPECIFIED = "unspecified"
+    SUBTITLE = "subtitle"
 
     @classmethod
-    def _missing_(cls, value):
-        if value is None:
+    def from_value(cls, val):
+        if val is None:
             return None
-        return super()._missing_(
-            value
-        )  # Still raise ValueError for other invalid values
+        try:
+            # Attempt to create the enum member using the standard constructor.
+            # This will correctly find existing members like ContentType("text")
+            # or raise ValueError for unknown string values like ContentType("invalid").
+            return cls(val)
+        except ValueError:
+            # Propagate the ValueError if 'val' is an invalid (non-None) value.
+            # This maintains the behavior where parsing an invalid string errors out.
+            raise

@@ -312,11 +312,13 @@ class PeriodInspector(BaseInspector):
         for adaptation_set in self.adaptation_sets:
             content_type_matches = (
                 adaptation_set.content_type is not None
-                and selector in adaptation_set.content_type.value  # content_type is a ContentType enum
+                and selector
+                in adaptation_set.content_type.value  # content_type is a ContentType enum
             )
             mime_type_matches = (
                 adaptation_set.mime_type is not None
-                and selector in adaptation_set.mime_type  # partial match of the mimetype string
+                and selector
+                in adaptation_set.mime_type  # partial match of the mimetype string
             )
             id_matches = (
                 adaptation_set.id is not None
@@ -470,23 +472,24 @@ class RepresentationInspector(BaseInspector):
             self.set_value_provenance("mime_type", ValueProvenance.INHERITED)
             return self._adaptation_set_inspector.mime_type
 
-    @cached_property
-    def content_type(self):
+    def get_content_type(self) -> ContentType:
         # This is not a property of the Representation tag, but it is inherited from the AdaptationSet
         # and is used as a shortcut to determine the type of the content
         if self._adaptation_set_inspector.content_type is not None:
-            self.set_value_provenance("content_type", ValueProvenance.EXPLICIT)
+            self.set_value_provenance("content_type", ValueProvenance.INHERITED)
             return self._adaptation_set_inspector.content_type
         else:
+            mt = self._tag.mime_type or self._adaptation_set_inspector.mime_type
+            self.set_value_provenance("content_type", ValueProvenance.DERIVED)
             # but if not available, we can infer it from the mime_type
-            if self._tag.mime_type.startswith("video/"):
+            if mt.startswith("video/"):
                 return ContentType.VIDEO
-            elif self._tag.mime_type.startswith("audio/"):
+            elif mt.startswith("audio/"):
                 return ContentType.AUDIO
-            elif self._tag.mime_type.startswith("image/"):
+            elif mt.startswith("image/"):
                 return ContentType.IMAGE
             else:
-                return ContentType.UNSPECIFIED
+                return None
 
 
 class SegmentInformationInspector(BaseInspector):
