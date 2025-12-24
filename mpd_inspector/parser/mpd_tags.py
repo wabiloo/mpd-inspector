@@ -130,7 +130,12 @@ class ContentProtection(Tag):
 
     @cached_property
     def pssh(self):
-        return PSSH(self.element.attrib.get("cenc:pssh"))
+        return [
+            PSSH(member)
+            for member in self.element.xpath(
+                LOOKUP_STR_FORMAT.format(target="pssh")
+            )
+        ]
 
 
 class RepresentationBase(Tag):  # pylint: disable=too-many-public-methods
