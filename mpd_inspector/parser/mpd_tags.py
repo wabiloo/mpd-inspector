@@ -90,7 +90,7 @@ class PSSH(Tag):
 
     @cached_property
     def pssh(self):
-        return self.element.attrib.get("pssh")
+        return self.element.text.strip()
 
 
 class ContentProtection(Tag):
