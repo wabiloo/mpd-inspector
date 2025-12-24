@@ -101,7 +101,7 @@ class ContentProtection(Tag):
         self.tag_map = {
             "default_key_id": "default_KId",
             "ns2_key_id": "ns2:default_KID",
-            "cenc_default_kid": "cenc:default_KID",
+            "cenc_default_kid": "{urn:mpeg:cenc:2013}:default_KID",
         }
 
     @cached_property
@@ -126,7 +126,7 @@ class ContentProtection(Tag):
 
     @cached_property
     def cenc_default_kid(self):
-        return self.element.attrib.get("cenc:default_KID")
+        return self.element.attrib.get("{urn:mpeg:cenc:2013}:default_KID")
 
     @cached_property
     def pssh(self):
