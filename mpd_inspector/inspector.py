@@ -603,7 +603,7 @@ class SegmentInformationInspector(BaseInspector):
             raise NotImplementedError("This addressing mode has not been implemented")
 
     def _generate_segments_from_simple_number_addressing(self):
-        segment_number = self.tag.start_number
+        segment_number = self.tag.start_number or 1
         segment_duration = self.tag.duration / self.tag.timescale
         total_duration_so_far = 0
         while total_duration_so_far < self._period_inspector.duration.total_seconds():
