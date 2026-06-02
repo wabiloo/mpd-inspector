@@ -600,7 +600,7 @@ class SegmentInformationInspector(BaseInspector):
             return list(self._generate_segments_from_explicit_number_addressing())
 
         else:
-            raise NotImplementedError("This addressing mode has not been implemented")
+            raise NotImplementedError(f"The addressing mode for adaptation set {self._adaptation_set_inspector.id} is not recognized or has not been implemented")
 
     def _generate_segments_from_simple_number_addressing(self):
         segment_number = self.tag.start_number or 1
